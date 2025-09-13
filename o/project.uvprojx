@@ -341,7 +341,7 @@
               <MiscControls>--diag-suppress=870</MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F40_41xxx</Define>
               <Undefine></Undefine>
-              <IncludePath>..\st_core;..\st_lib;..\os_src;..\main;..\library;..\o;..\fatfs</IncludePath>
+              <IncludePath>..\st_core;..\st_lib;..\os_src;..\main;..\library;..\o;..\fatfs;..\tft</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1094,6 +1094,31 @@
               <FileName>Shadow.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\main\Shadow.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>tft</GroupName>
+          <Files>
+            <File>
+              <FileName>SPI_SF.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\tft\SPI_SF.c</FilePath>
+            </File>
+            <File>
+              <FileName>SPI_SF.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\tft\SPI_SF.h</FilePath>
+            </File>
+            <File>
+              <FileName>TFT_ST7735.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\tft\TFT_ST7735.c</FilePath>
+            </File>
+            <File>
+              <FileName>TFT_ST7735.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\tft\TFT_ST7735.h</FilePath>
             </File>
           </Files>
         </Group>

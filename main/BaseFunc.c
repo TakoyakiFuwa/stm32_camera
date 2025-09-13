@@ -19,7 +19,7 @@
 /*  指示灯  */
 #define BF_LED_R	RCC_AHB1Periph_GPIOE
 #define BF_LED_G	GPIOE
-#define BF_LED_P	GPIO_Pin_12
+#define BF_LED_P	GPIO_Pin_8
 /*  看门狗时间  */
 uint16_t wdg_ms = 3000;
 
