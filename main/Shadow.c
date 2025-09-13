@@ -11,6 +11,7 @@
 /*  外设库  */
 #include "U_USART.h"
 #include "TFT_ST7735.h"
+#include "ov7670.h"
 
 /*	希望我这次重新写模板可以用的久一点...
  *	想开始做一些很有趣的项目....
@@ -26,7 +27,8 @@ void Main_Start(void* pvParameters)
 	BF_Start();
 	//初始化 建议格式:Init_XXX()
 	Init_Func();
-	TFT_Init();
+	Init_TFT();	
+	Init_OV();
 	
 	//线程	 建议格式:Task_XXX()
 		//进入临界区
@@ -34,7 +36,7 @@ void Main_Start(void* pvParameters)
 		//Func测试
 	TaskHandle_t TASK_FUNC_Handler;
 	xTaskCreate(Task_Func,"Func",64,NULL,1,&TASK_FUNC_Handler);
-	
+	xTaskCreate(Task_Camera,"Camera",512,NULL,2,NULL);
 		//退出临界区
 	taskEXIT_CRITICAL();	
 	//打印各线程栈

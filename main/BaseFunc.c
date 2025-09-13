@@ -36,7 +36,7 @@ void BF_Start(void)
 		//串口
 	Init_USART();
 		//看门狗
-	BF_Init_WDG(3000);
+//	BF_Init_WDG(3000);
 		//指示灯
 	BF_Init_LED();
 	//进入临界区

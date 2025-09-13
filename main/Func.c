@@ -7,6 +7,8 @@
 #include "task.h"
 /*  外设库  */
 #include "U_USART.h"
+#include "ov7670.h"
+#include "TFT_ST7735.h"
 /*  FATFS  */
 #include "ff.h"
 
@@ -25,6 +27,15 @@ void Task_Func(void* pvParameters)
 	while(1)
 	{
 		vTaskDelay(200);
+	}
+}
+void Task_Camera(void* pvParameters)
+{
+	while(1)
+	{
+		vTaskDelay(10);
+		TFT_SetCursor(0,0,120,120);
+		OV_PixelsGet(2,TFT_Write16Data);
 	}
 }
 /**@brief  Func命令行接口
