@@ -3,6 +3,7 @@
 #include "stdint.h"
 
 void Init_OV(void);
-void OV_PixelsGet(uint8_t scale,void (*Func)(uint16_t));
+void OV_PixelsGet(void (*Func)(uint8_t));
+void Task_Camera(void* pvParameters);
 
 #endif
