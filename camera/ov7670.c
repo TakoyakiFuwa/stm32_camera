@@ -37,8 +37,8 @@
  *	PD3		->	SDA		//高位在前
  *	PD4		->	GND
  */
-#define OV_Output_width 	160		//最高好像是314 且会有黑边
-#define OV_Output_height	130		//最高248 达到240标准
+#define OV_Output_width 	314		//最高好像是314 且会有黑边
+#define OV_Output_height	240		//最高248 达到240标准
 
 //SCL
 #define OV_SCL(x)	GPIO_WriteBit(GPIOB,GPIO_Pin_9,(BitAction)x);for(int i=0;i<100;i++);
@@ -60,7 +60,8 @@
 /**@brief 可直接用于测试的线程
   *@-
   */
-#include "TFT_ST7735.h"
+//#include "TFT_ST7735.h"
+#include "TFT_ILI9341.h"
 void OV_FuncPixel(uint8_t data)
 {
 	static uint8_t msb_pixel = 1;
@@ -75,7 +76,8 @@ void OV_FuncPixel(uint8_t data)
 	{
 		msb_pixel = 1;
 		rgb565+=data;
-		TFT_Write16Data(rgb565);
+//		TFT_Write16Data(rgb565);
+		ILI_SendColor(rgb565);
 	}
 }
 void Task_Camera(void* pvParameters)
@@ -83,7 +85,8 @@ void Task_Camera(void* pvParameters)
 	while(1)
 	{
 		vTaskDelay(10);
-		TFT_SetCursor(0,0,OV_Output_width,OV_Output_height);
+//		TFT_SetCursor(0,0,OV_Output_width,OV_Output_height);
+		ILI_SetRect(0,0,OV_Output_width,OV_Output_height);
 		OV_PixelsGet(OV_FuncPixel);
 	}
 }

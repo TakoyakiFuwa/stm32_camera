@@ -11,6 +11,7 @@
 /*  外设库  */
 #include "U_USART.h"
 #include "TFT_ST7735.h"
+#include "TFT_ILI9341.h"
 #include "ov7670.h"
 
 /*	希望我这次重新写模板可以用的久一点...
@@ -28,6 +29,7 @@ void Main_Start(void* pvParameters)
 	//初始化 建议格式:Init_XXX()
 	Init_Func();
 	Init_TFT();	
+	Init_ILI();
 	Init_OV();
 	
 	//线程	 建议格式:Task_XXX()
