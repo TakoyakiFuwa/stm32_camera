@@ -13,6 +13,7 @@
  *	PB12	(12)	-> CS
  */
 
+extern uint8_t pic_data[];
 void SPI_HW_Init(void)
 {
 	//引脚初始化
@@ -43,6 +44,27 @@ void SPI_HW_Init(void)
 	SPI_InitStruct.SPI_NSS = SPI_NSS_Soft;
 	SPI_Init(SPI2,&SPI_InitStruct);
 	SPI_Cmd(SPI2,ENABLE);
+	//DMA设置 DMA1_Channel0_Stream4
+	SPI_I2S_DMACmd(SPI2,SPI_I2S_DMAReq_Tx,ENABLE);
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1,ENABLE);
+	DMA_InitTypeDef DMA_InitStruct;
+	DMA_InitStruct.DMA_BufferSize = 160*128*2;
+	DMA_InitStruct.DMA_Channel = DMA_Channel_0;
+	DMA_InitStruct.DMA_DIR = DMA_DIR_MemoryToPeripheral;
+	DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;
+	DMA_InitStruct.DMA_FIFOThreshold = DMA_FIFOThreshold_1QuarterFull;
+	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)pic_data;
+	DMA_InitStruct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+	DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+	DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
+	DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;
+	DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&(SPI2->DR);
+	DMA_InitStruct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+	DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+	DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+	DMA_InitStruct.DMA_Priority = DMA_Priority_Medium;
+	DMA_Init(DMA1_Stream4,&DMA_InitStruct);
+	DMA_Cmd(DMA1_Stream4,DISABLE);
 }
 inline void SPI_HW_Send(uint8_t x)
 {
@@ -59,7 +81,32 @@ inline void SPI_HW_CS_L(void)
 {
 	GPIOB->BSRRH = GPIO_Pin_12;
 }
-
+#include "TFT_ST7735.h"
+void Cmd_SPI(void)
+{
+	for(int i=0;i<240*320;i++)
+	{
+		pic_data[i]   = 0x00;//0000 0000 0001 1111//纯蓝色
+		pic_data[i++] = 0x1F;
+	}
+	for(int i=0;i<240*320;i++)
+	{
+		U_Printf("[%d]:[%h] \r\n",i,pic_data[i]);
+	}
+	//DMA的方式
+	TFT_SetCursor(0,0,160,128);
+	DMA_SetCurrDataCounter(DMA1_Stream4,128*160*2);
+	TFT_Write16Data(0);
+	SPI_HW_CS_L();
+	DMA_Cmd(DMA1_Stream4,ENABLE);
+	while(DMA_GetFlagStatus(DMA1_Stream4,DMA_FLAG_TCIF4)!=SET);
+	DMA_Cmd(DMA1_Stream4,DISABLE);
+	SPI_HW_CS_H();
+	
+	
+	
+	U_Printf("我的天 \r\n");
+}
 
 
 

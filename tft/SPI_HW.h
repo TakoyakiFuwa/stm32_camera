@@ -6,5 +6,6 @@ void SPI_HW_Init(void);
 void SPI_HW_Send(uint8_t x);
 void SPI_HW_CS_H(void);
 void SPI_HW_CS_L(void);
+void Cmd_SPI(void);
 
 #endif

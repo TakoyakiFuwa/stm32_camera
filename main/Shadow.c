@@ -11,14 +11,18 @@
 /*  外设库  */
 #include "U_USART.h"
 #include "TFT_ST7735.h"
-//#include "TFT_ILI9341.h"
+#include "TFT_ILI9341.h"
 #include "ov7670.h"
+#include "SPI_HW.h"
 
 /*	希望我这次重新写模板可以用的久一点...
  *	想开始做一些很有趣的项目....
  *	以及...很想mo....
  *		——2025/5/20-14:41
  */
+
+//QVGA = 320*240*2 , 内存不够，调整为300*200*2
+uint8_t pic_data[300*200*2];
 
 /**@brief  用于main中的接口
   */
@@ -29,16 +33,15 @@ void Main_Start(void* pvParameters)
 	//初始化 建议格式:Init_XXX()
 	Init_Func();
 	Init_TFT();	
-//	Init_ILI();
+	Init_ILI();
 	Init_OV();
 	
 	//线程	 建议格式:Task_XXX()
 		//进入临界区
 	taskENTER_CRITICAL();
 		//Func测试
-	TaskHandle_t TASK_FUNC_Handler;
-	xTaskCreate(Task_Func,"Func",64,NULL,1,&TASK_FUNC_Handler);
-	xTaskCreate(Task_Camera,"Camera",512,NULL,2,NULL);
+//	xTaskCreate(Task_Func,"Func",10,NULL,1,NULL);
+	xTaskCreate(Task_Camera,"Camera",64,NULL,2,NULL);
 		//退出临界区
 	taskEXIT_CRITICAL();	
 	//打印各线程栈
@@ -61,7 +64,10 @@ int8_t Cmd(void)
 	{
 		Cmd_Func();
 	}
-		
+	else if(Command("SPI"))
+	{
+		Cmd_SPI();
+	}
 	
 	//CLI :>
 	else if(Command("HELP"))

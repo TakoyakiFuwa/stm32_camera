@@ -37,8 +37,8 @@
  *	PD3		->	SDA		//高位在前
  *	PD4		->	GND
  */
-#define OV_Output_width 	161		//最高好像是314 且会有黑边
-#define OV_Output_height	131		//最高248 达到240标准
+#define OV_Output_width 	300		//最高好像是314 且会有黑边
+#define OV_Output_height	200		//最高248 达到240标准
 
 //SCL
 #define OV_SCL(x)	GPIO_WriteBit(GPIOB,GPIO_Pin_9,(BitAction)x);for(int i=0;i<100;i++);
@@ -61,7 +61,7 @@
   *@-
   */
 #include "TFT_ST7735.h"
-//#include "TFT_ILI9341.h"
+#include "TFT_ILI9341.h"
 void OV_FuncPixel(uint8_t data)
 {
 	static uint8_t msb_pixel = 1;
@@ -76,18 +76,37 @@ void OV_FuncPixel(uint8_t data)
 	{
 		msb_pixel = 1;
 		rgb565+=data;
-		TFT_Write16Data(rgb565);
-//		ILI_SendColor(rgb565);
+//		TFT_Write16Data(rgb565);
+		ILI_SendColor(rgb565);
 	}
 }
+/**@brief  ?这个只是测试线程吗(?)
+  */
+extern uint8_t pic_data[];
 void Task_Camera(void* pvParameters)
 {
+	ILI_SetRect(0,240-17,320,17);
+	uint16_t rgb565 = ILI_RGB888To565(0xffc7c7);
+	for(int i=0;i<17*320;i++)
+	{
+		ILI_SendColor(rgb565);
+	}
+	ILI_SetRect(0,0,320,240-17);
+	for(int i=0;i<320*240;i++)
+	{
+		ILI_SendColor(0);
+	}
 	while(1)
 	{
 		vTaskDelay(10);
-		TFT_SetCursor(0,0,OV_Output_width,OV_Output_height);
-//		ILI_SetRect(0,0,OV_Output_width,OV_Output_height);
-		OV_PixelsGet(OV_FuncPixel);
+//		TFT_SetCursor(0,0,OV_Output_width,OV_Output_height);
+		OV_PixelsGet();
+		ILI_SetRect(10,11,OV_Output_width,OV_Output_height);
+		
+		for(int i=0;i<120000;i++)
+		{
+			OV_FuncPixel(pic_data[i]);
+		}
 	}
 }
 /**@brief  XCLK采用硬件方式
@@ -382,7 +401,7 @@ void Init_OV(void)
 		//软件初始化
 	OV_SoftwareInit();
 		//设置窗口位置
-	OV_config_window(152,0,OV_Output_width,OV_Output_height);
+	OV_config_window(175,50,OV_Output_width,OV_Output_height);
 	
 	
 	U_Printf("ov7670(相机)初始化完成 \r\n");
@@ -395,8 +414,9 @@ void Init_OV(void)
   *@param  Func	  像素处理函数
   *@retval void
   */
-void OV_PixelsGet(void (*Func)(uint8_t))
+void OV_PixelsGet(void)
 {	
+	uint32_t i = 0;
 	while(OV_VS()==0);
 	while(OV_VS()!=0);
 	OV_XCLK_OFF();
@@ -408,7 +428,7 @@ void OV_PixelsGet(void (*Func)(uint8_t))
 			{
 				OV_XCLK();
 			}
-			Func(OV_RGBData());
+			pic_data[i++] = OV_RGBData();
 			while(OV_PLK()!=0)
 			{
 				OV_XCLK();
@@ -463,7 +483,7 @@ static void OV_SoftwareInit(void)
 	SCCB_WriteReg(0x12, 0x80);	//SCCB复位
 	vTaskDelay(100);            
 	SCCB_WriteReg(0x8c, 0x00);    //RGB444
-	SCCB_WriteReg(0x3a, 0x00);    //行缓冲测试
+	SCCB_WriteReg(0x3a, 0x04);    //行缓冲测试
 	SCCB_WriteReg(0x40, 0xd0);    //RGB565
 	SCCB_WriteReg(0x8c, 0x00);    //RGB444
 	SCCB_WriteReg(0x12, 0x14);    //QVGA RGB
@@ -480,7 +500,7 @@ static void OV_SoftwareInit(void)
 	SCCB_WriteReg(0x72, 0x11);    
 	SCCB_WriteReg(0x73, 0x70);    //PCLK DIV						建议0x70
 	SCCB_WriteReg(0xa2, 0x01);    //PCLK Delay	像素延时//0100	建议0x01
-	SCCB_WriteReg(0x11, 0x09);    //PCLK 时钟分频 fps 数值越大刷新越慢但越稳定 建议0x07
+	SCCB_WriteReg(0x11, 0x08);    //PCLK 时钟分频 fps 数值越大刷新越慢但越稳定 建议0x07
 	//SCCB_WriteReg(0x15 , 0x31);
 	SCCB_WriteReg(0x7a, 0x20); 
 	SCCB_WriteReg(0x7b, 0x1c); 
@@ -499,7 +519,7 @@ static void OV_SoftwareInit(void)
 	SCCB_WriteReg(0x88, 0xd7);
 	SCCB_WriteReg(0x89, 0xe8);
 	 
-	SCCB_WriteReg(0x32, 0xb6);
+	SCCB_WriteReg(0x32,0xb6);
 	
 	SCCB_WriteReg(0x13, 0xff); 
 	SCCB_WriteReg(0x00, 0x00);

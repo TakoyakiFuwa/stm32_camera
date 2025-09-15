@@ -197,16 +197,16 @@ uint16_t TFT_RGB888To565(uint32_t RGB_888)
 }
 /**@brief  设置写入范围
   *@param  x_start y_start 	写入位置
-  *@param  weight height	宽度/高度
+  *@param  width height	宽度/高度
   *@retval void
   */
-void TFT_SetCursor(uint8_t x,uint8_t y,uint8_t weight,uint8_t height)
+void TFT_SetCursor(uint8_t x,uint8_t y,uint8_t width,uint8_t height)
 {
 	TFT_WriteCmd(0x2a);//x轴
 	TFT_WriteData(0x00);
 	TFT_WriteData(x);//x起始
 	TFT_WriteData(0x00);
-	TFT_WriteData(x+weight-1);//x终止
+	TFT_WriteData(x+width-1);//x终止
 	
 	TFT_WriteCmd(0x2b);//y轴
 	TFT_WriteData(0x00);

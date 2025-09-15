@@ -22,7 +22,7 @@ int main(void)
 {
 	//创建线程
 	TaskHandle_t MAIN_START_Handler;
-	xTaskCreate(Main_Start,"Main_Start",512,NULL,9,&MAIN_START_Handler);
+	xTaskCreate(Main_Start,"Main_Start",256,NULL,9,&MAIN_START_Handler);
 	//开启任务调度器
 	vTaskStartScheduler();
 }
