@@ -1130,6 +1130,16 @@
               <FileType>5</FileType>
               <FilePath>..\tft\TFT_ILI9341.h</FilePath>
             </File>
+            <File>
+              <FileName>SPI_HW.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\tft\SPI_HW.c</FilePath>
+            </File>
+            <File>
+              <FileName>SPI_HW.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\tft\SPI_HW.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

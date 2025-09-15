@@ -1,7 +1,7 @@
 #include "TFT_ST7735.h"
 /*  协议库  */
 #include "SPI_SF.h"
-//#include "SPI_HD.h"
+#include "SPI_HW.h"
 /*  OS库  */
 #include "FreeRTOS.h"
 #include "task.h"
@@ -16,11 +16,13 @@
  */
 
 /*  SPI接口  */
+/*  这部分移植在TFT_SPI_SendData  */
 	//软件
-#define SPI_Init()		SPI_SF_Init()
-#define SPI_Send(x)		SPI_SF_Send(x)
-#define SPI_CS_H()		SPI_SF_CS_H()
-#define SPI_CS_L()		SPI_SF_CS_L()
+//#define SPI_Init()		SPI_SF_Init()
+	//硬件
+#define SPI_Init()		SPI_HW_Init()
+
+
 /*  移植配置区域  */
 
 /*	当前在处理F4_UI板子
@@ -78,6 +80,20 @@ static void TFT_PinInit()
 	GPIO_WriteBit(GPIOD,GPIO_Pin_13|GPIO_Pin_9,Bit_SET);
 	GPIO_WriteBit(GPIOB,GPIO_Pin_14,Bit_SET);
 }
+/**@brief  发送数据
+  *@-	   接口这里...就...很难办
+  */
+static void TFT_SPI_SendData(uint8_t data)
+{
+	//软件
+//	SPI_SF_CS_L();
+//	SPI_SF_Send(data);
+//	SPI_SF_CS_H();
+	//硬件
+	SPI_HW_CS_L();
+	SPI_HW_Send(data);
+	SPI_HW_CS_H();
+}
 
 static void TFT_SoftwareInit(void);
 /**@brief  TFT初始化
@@ -88,7 +104,7 @@ void Init_TFT(void)
 {
 	//通信初始化
 	SPI_Init();
-	vTaskDelay(100);//SPI外设初始化后应Delay一小段时间等待完成后继续进行
+	vTaskDelay(200);//SPI外设初始化后应Delay一小段时间等待完成后继续进行
 	//引脚初始化
 	TFT_PinInit();
 	//硬件复位
@@ -131,9 +147,7 @@ void Init_TFT(void)
 static void TFT_WriteCmd(uint8_t cmd)
 {
 	TFT_DC_L();
-	SPI_CS_L();
-	SPI_Send(cmd);
-	SPI_CS_H();
+	TFT_SPI_SendData(cmd);
 }
 /**@brief （内部函数）向TFT发送8位数据
   *@param  data  要发送的数据
@@ -142,9 +156,7 @@ static void TFT_WriteCmd(uint8_t cmd)
 static void TFT_WriteData(uint8_t data)
 {
 	TFT_DC_H();
-	SPI_CS_L();
-	SPI_Send(data);
-	SPI_CS_H();
+	TFT_SPI_SendData(data);
 }
 /**@brief  发送16位数据
   *@param  data  16位数据
@@ -153,10 +165,8 @@ static void TFT_WriteData(uint8_t data)
 void TFT_Write16Data(uint16_t RGB_565)
 {
 	TFT_DC_H();
-	SPI_CS_L();
-	SPI_Send((RGB_565>>8));
-	SPI_Send(RGB_565);
-	SPI_CS_H();
+	TFT_SPI_SendData((RGB_565>>8));
+	TFT_SPI_SendData(RGB_565);
 }
 /**@brief  从RGB888改成RGB555
   *@param  color RGB888数据
