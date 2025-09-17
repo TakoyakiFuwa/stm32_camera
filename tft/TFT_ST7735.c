@@ -37,15 +37,15 @@
  *	PB14	(11)	-> VCC
  *	PB12	(12)	-> CS
  */
-/*	方向为: （适合BMP输出）
+/*	方向为: （适合相机输出）
  *		
- *	^ y	
- *	|		
- *	|	3————>
- *	|	2————>
- *	|	1————>
- *	|			 x
- *	+-——-——-——-——>
+ *	 			x^
+ *		^  ^  ^	 |
+ *		|  |  |	 |
+ *		|  |  |	 |
+ *		3  2  1	 |
+ *	y			 |
+ *	<-——-——-——-——+
  */
 
 /*  TFT屏幕处理  */
@@ -202,13 +202,13 @@ uint16_t TFT_RGB888To565(uint32_t RGB_888)
   */
 void TFT_SetCursor(uint8_t x,uint8_t y,uint8_t width,uint8_t height)
 {
-	TFT_WriteCmd(0x2a);//x轴
+	TFT_WriteCmd(0x2b);//x轴
 	TFT_WriteData(0x00);
 	TFT_WriteData(x);//x起始
 	TFT_WriteData(0x00);
 	TFT_WriteData(x+width-1);//x终止
 	
-	TFT_WriteCmd(0x2b);//y轴
+	TFT_WriteCmd(0x2a);//y轴
 	TFT_WriteData(0x00);
 	TFT_WriteData(y);//y起始
 	TFT_WriteData(0x00);
@@ -332,8 +332,8 @@ static void TFT_SoftwareInit(void)
 	TFT_WriteData(0x0E); 
 	
 	TFT_WriteCmd(0x36); 	//MX, MY, RGB mode 
-	TFT_WriteData(0xE0);	//YXV0 0000 翻转 前两位分别是Y X
-							//第三位V是XY控制交换
+	TFT_WriteData(0xC0);	//YXV0 0000 翻转 前两位分别是Y X
+							//第三位V是XY控制交换 应该是E0
 
 	//ST7735R Gamma Sequence
 	TFT_WriteCmd(0xe0); 	//Gamma (‘+’polarity) Correction Characteristics Setting

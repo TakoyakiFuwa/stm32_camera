@@ -37,8 +37,8 @@
  *	PD3		->	SDA		//高位在前
  *	PD4		->	GND
  */
-#define OV_Output_width 	162		//最高好像是314 且会有黑边
-#define OV_Output_height	130		//最高248 达到240标准
+#define OV_Output_width 	130		//最高好像是314 且会有黑边
+#define OV_Output_height	162		//最高248 达到240标准
 
 //SCL
 #define OV_SCL(x)	GPIO_WriteBit(GPIOB,GPIO_Pin_9,(BitAction)x);for(int i=0;i<100;i++);
@@ -100,7 +100,7 @@ void Task_Camera(void* pvParameters)
 		
 		//输出到屏幕
 //		ILI_SetRect(10,11,OV_Output_width,OV_Output_height);	
-		TFT_SetCursor(0,0,OV_Output_width,OV_Output_height);
+		TFT_SetCursor(0,0,OV_Output_height,OV_Output_width);
 		TFT_Write16Data(0);
 		SPI_HW_CS_L();
 		//
