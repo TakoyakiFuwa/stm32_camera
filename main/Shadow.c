@@ -22,7 +22,7 @@
  */
 
 //QVGA = 320*240*2 , 内存不够，调整为300*200*2
-uint8_t pic_data[300*200*2];
+volatile uint8_t pic_data[300*200*2];
 
 /**@brief  用于main中的接口
   */

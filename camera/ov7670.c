@@ -37,8 +37,8 @@
  *	PD3		->	SDA		//高位在前
  *	PD4		->	GND
  */
-#define OV_Output_width 	120		//最高好像是314 且会有黑边
-#define OV_Output_height	120		//最高248 达到240标准
+#define OV_Output_width 	162		//最高好像是314 且会有黑边
+#define OV_Output_height	130		//最高248 达到240标准
 
 //SCL
 #define OV_SCL(x)	GPIO_WriteBit(GPIOB,GPIO_Pin_9,(BitAction)x);for(int i=0;i<100;i++);
@@ -62,59 +62,61 @@
   */
 #include "TFT_ST7735.h"
 #include "TFT_ILI9341.h"
-void OV_FuncPixel(uint8_t data)
-{
-	static uint8_t msb_pixel = 1;
-	static uint16_t rgb565;
-	if(msb_pixel==1)
-	{
-		msb_pixel = 0;
-		rgb565 = data;
-		rgb565<<=8;
-	}
-	else
-	{
-		msb_pixel = 1;
-		rgb565+=data;
-		TFT_Write16Data(rgb565);
-//		ILI_SendColor(rgb565);
-	}
-}
+//void OV_FuncPixel(uint8_t data)
+//{
+//	static uint8_t msb_pixel = 1;
+//	static uint16_t rgb565;
+//	if(msb_pixel==1)
+//	{
+//		msb_pixel = 0;
+//		rgb565 = data;
+//		rgb565<<=8;
+//	}
+//	else
+//	{
+//		msb_pixel = 1;
+//		rgb565+=data;
+//		TFT_Write16Data(rgb565);
+////		ILI_SendColor(rgb565);
+//	}
+//}
 /**@brief  ?这个只是测试线程吗(?)
   */
 extern uint8_t pic_data[];
+#include "SPI_HW.h"
 void Task_Camera(void* pvParameters)
 {
-	//啊...这些都是屏幕背景啊...
-//	ILI_SetRect(0,240-17,320,17);
-//	uint16_t rgb565 = ILI_RGB888To565(0xffc7c7);
-//	for(int i=0;i<17*320;i++)
-//	{
-////		ILI_SendColor(rgb565);
-//		ILI_SendColor(0x2222);
-//	}
-//	ILI_SetRect(0,0,320,240-17);
-//	for(int i=0;i<320*240;i++)
-//	{
-//		ILI_SendColor(0);
-//	}
-	
 	while(1)
 	{
-		vTaskDelay(10);
-		TFT_SetCursor(0,0,OV_Output_width,OV_Output_height);
-		OV_PixelsGet();
-		
-		
+		vTaskDelay(1);
 		//从相机获取数据
-		
+		DMA_SetCurrDataCounter(DMA2_Stream1,OV_Output_width*OV_Output_height/2);
+		DCMI_CaptureCmd(ENABLE);
+		DMA_Cmd(DMA2_Stream1,ENABLE);
+		while(DMA_GetFlagStatus(DMA2_Stream1,DMA_FLAG_TCIF1)!=SET);
+		DCMI_CaptureCmd(DISABLE);
+		DMA_ClearFlag(DMA2_Stream1,DMA_FLAG_TCIF1);
+		DMA_Cmd(DMA2_Stream1,DISABLE);
 		
 		//输出到屏幕
 //		ILI_SetRect(10,11,OV_Output_width,OV_Output_height);	
-		for(int i=0;i<120*120*2;i++)
-		{
-			OV_FuncPixel(pic_data[i]);
-		}
+		TFT_SetCursor(0,0,OV_Output_width,OV_Output_height);
+		TFT_Write16Data(0);
+		SPI_HW_CS_L();
+		//
+//		for(int i=0;i<OV_Output_height*OV_Output_width*2;i++)
+//		{
+//			SPI_HW_Send(pic_data[i]);
+//		}
+
+		DMA_SetCurrDataCounter(DMA1_Stream4,OV_Output_height*OV_Output_width*2);
+		DMA_Cmd(DMA1_Stream4,ENABLE);
+		while(DMA_GetFlagStatus(DMA1_Stream4,DMA_FLAG_TCIF4)!=SET);
+		DMA_ClearFlag(DMA1_Stream4,DMA_FLAG_TCIF4);
+		DMA_Cmd(DMA1_Stream4,DISABLE);
+		//
+		SPI_HW_CS_H();
+	
 	}
 }
 /**@brief  XCLK采用硬件方式
@@ -133,7 +135,7 @@ void OV_XCLK_ON(void)
 	GPIO_Init(GPIOA,&GPIO_InitStruct);
 	//复用功能初始化
 	GPIO_PinAFConfig(GPIOA,GPIO_PinSource8,GPIO_AF_MCO);
-	RCC_MCO1Config(RCC_MCO1Source_HSI,RCC_MCO1Div_2);
+	RCC_MCO1Config(RCC_MCO1Source_HSI,RCC_MCO1Div_1);
 }
 /**@brief  XCLK采用软件方式
   *@param  void
@@ -252,54 +254,37 @@ static void OV_PinInit(void)
 	DCMI_InitStruct.DCMI_CaptureMode = DCMI_CaptureMode_Continuous;
 	DCMI_InitStruct.DCMI_CaptureRate = DCMI_CaptureRate_All_Frame;
 	DCMI_InitStruct.DCMI_ExtendedDataMode = DCMI_ExtendedDataMode_8b;
-	DCMI_InitStruct.DCMI_HSPolarity = DCMI_HSPolarity_High;
+	DCMI_InitStruct.DCMI_HSPolarity = DCMI_HSPolarity_Low;
 	DCMI_InitStruct.DCMI_PCKPolarity = DCMI_PCKPolarity_Rising;
 	DCMI_InitStruct.DCMI_SynchroMode = DCMI_SynchroMode_Hardware;
-	DCMI_InitStruct.DCMI_VSPolarity = DCMI_VSPolarity_Low;
+	DCMI_InitStruct.DCMI_VSPolarity = DCMI_VSPolarity_High;
 	DCMI_Init(&DCMI_InitStruct);
 	DCMI_Cmd(ENABLE);
 	//所以DCMI不用DMA输出不了数据是吧.....	DMA2_Stream1_Channel1
-	/*
+	
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2,ENABLE);
 	DMA_Cmd(DMA2_Stream1,DISABLE);
 	DMA_InitTypeDef DMA_InitStruct;
-	DMA_InitStruct.DMA_BufferSize = 120000;
+	DMA_InitStruct.DMA_BufferSize = OV_Output_width*OV_Output_height/2;
 	DMA_InitStruct.DMA_Channel = DMA_Channel_1;
 	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralToMemory;
 	DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;
 	DMA_InitStruct.DMA_FIFOThreshold = DMA_FIFOStatus_Full;
-	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)pic_data;
+	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)&pic_data[0];
 	DMA_InitStruct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-	DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+	DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
 	DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
 	DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;
 	DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&DCMI->DR;
 	DMA_InitStruct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-	DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+	DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
 	DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
 	DMA_InitStruct.DMA_Priority = DMA_Priority_High;
 	DMA_Init(DMA2_Stream1,&DMA_InitStruct);
 	DMA_Cmd(DMA2_Stream1,DISABLE);
-	*/
-	//DMA整不明白，先看看中断
-	DCMI_ITConfig(DCMI_IT_FRAME,ENABLE);
-	NVIC_SetPriorityGrouping(NVIC_PriorityGroup_4);
-	NVIC_InitTypeDef NVIC_InitStruct;
-	NVIC_InitStruct.NVIC_IRQChannel = DCMI_IRQn;
-	NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 3;
-	NVIC_InitStruct.NVIC_IRQChannelSubPriority = 3;
-	NVIC_Init(&NVIC_InitStruct);
-	
+		
 	//开启图像捕获
 	DCMI_CaptureCmd(ENABLE);
-}
-void DCMI_IRQHandler(void)
-{
-	U_Printf(":) \r\n");
-	if(DCMI_GetITStatus(DCMI_IT_FRAME)==SET)
-	{
-		DCMI_ClearITPendingBit(DCMI_IT_FRAME);
-	}
 }
 
 /**@brief  软件引脚读一个像素

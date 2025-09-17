@@ -53,7 +53,7 @@ void SPI_HW_Init(void)
 	DMA_InitStruct.DMA_DIR = DMA_DIR_MemoryToPeripheral;
 	DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;
 	DMA_InitStruct.DMA_FIFOThreshold = DMA_FIFOThreshold_1QuarterFull;
-	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)pic_data;
+	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)&pic_data[10];
 	DMA_InitStruct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
 	DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
 	DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
@@ -84,28 +84,29 @@ inline void SPI_HW_CS_L(void)
 #include "TFT_ST7735.h"
 void Cmd_SPI(void)
 {
-	for(int i=0;i<240*320;i++)
-	{
-		pic_data[i]   = 0x00;//0000 0000 0001 1111//纯蓝色
-		pic_data[i++] = 0x1F;
-	}
-	for(int i=0;i<240*320;i++)
-	{
-		U_Printf("[%d]:[%h] \r\n",i,pic_data[i]);
-	}
+//	for(int i=0;i<160*130*2;i++)
+//	{
+//		pic_data[i] = 0xFF;
+//	}
 	//DMA的方式
+	U_Printf("很奇怪:%h \r\n",pic_data[100]);
+	DMA_Cmd(DMA1_Stream4,DISABLE);
 	TFT_SetCursor(0,0,160,128);
 	DMA_SetCurrDataCounter(DMA1_Stream4,128*160*2);
 	TFT_Write16Data(0);
 	SPI_HW_CS_L();
 	DMA_Cmd(DMA1_Stream4,ENABLE);
 	while(DMA_GetFlagStatus(DMA1_Stream4,DMA_FLAG_TCIF4)!=SET);
-	DMA_Cmd(DMA1_Stream4,DISABLE);
+	DMA_ClearFlag(DMA1_Stream4,DMA_FLAG_TCIF4);
 	SPI_HW_CS_H();
 	
+	for(int i=0;i<160*130*2;i++)
+	{
+		pic_data[i] = 0xFF;
+	}
 	
 	
-	U_Printf("我的天 \r\n");
+	U_Printf("我的天%h \r\n",pic_data[100]);
 }
 
 
