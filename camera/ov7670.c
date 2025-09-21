@@ -37,8 +37,8 @@
  *	PD3		->	SDA		//高位在前
  *	PD4		->	GND
  */
-#define OV_Output_width 	130		//最高好像是314 且会有黑边
-#define OV_Output_height	162		//最高248 达到240标准
+#define OV_Output_width 	300		//最高好像是314 且会有黑边
+#define OV_Output_height	208		//最高248 达到240标准
 
 //SCL
 #define OV_SCL(x)	GPIO_WriteBit(GPIOB,GPIO_Pin_9,(BitAction)x);for(int i=0;i<100;i++);
@@ -83,12 +83,18 @@
 /**@brief  ?这个只是测试线程吗(?)
   */
 extern uint8_t pic_data[];
+extern uint8_t take_a_photo;
 #include "SPI_HW.h"
 void Task_Camera(void* pvParameters)
 {
 	while(1)
 	{
 		vTaskDelay(1);
+		if(take_a_photo!=0)
+		{
+			vTaskDelay(100);
+			continue;
+		}
 		//从相机获取数据
 		DMA_SetCurrDataCounter(DMA2_Stream1,OV_Output_width*OV_Output_height/2);
 		DCMI_CaptureCmd(ENABLE);
@@ -99,23 +105,34 @@ void Task_Camera(void* pvParameters)
 		DMA_Cmd(DMA2_Stream1,DISABLE);
 		
 		//输出到屏幕
-//		ILI_SetRect(10,11,OV_Output_width,OV_Output_height);	
-		TFT_SetCursor(0,0,OV_Output_height,OV_Output_width);
-		TFT_Write16Data(0);
-		SPI_HW_CS_L();
+		ILI_SetRect(10,11,OV_Output_width,OV_Output_height);	
+		ILI_SendColor(0);
+		ILI_Swap(0);
+		GPIOE->BSRRH = (uint32_t)GPIO_Pin_10;
+		for(uint32_t i=0;i<OV_Output_height*OV_Output_width*2;i++)
+		{
+			ILI_OneByte(pic_data[i]);
+		}
+		GPIOE->BSRRL = (uint32_t)GPIO_Pin_10;
+		
+//		TFT_SetCursor(0,0,OV_Output_height,OV_Output_width);
+//		TFT_Write16Data(0);
+//		SPI_HW_CS_L();
 		//
-//		for(int i=0;i<OV_Output_height*OV_Output_width*2;i++)
+//		for(int i=0;i<OV_Output_height*OV_Output_width*2;i+=2)
 //		{
+//			SPI_HW_Send(pic_data[i-1]);
 //			SPI_HW_Send(pic_data[i]);
 //		}
 
-		DMA_SetCurrDataCounter(DMA1_Stream4,OV_Output_height*OV_Output_width*2);
-		DMA_Cmd(DMA1_Stream4,ENABLE);
-		while(DMA_GetFlagStatus(DMA1_Stream4,DMA_FLAG_TCIF4)!=SET);
-		DMA_ClearFlag(DMA1_Stream4,DMA_FLAG_TCIF4);
-		DMA_Cmd(DMA1_Stream4,DISABLE);
+
+//		DMA_SetCurrDataCounter(DMA1_Stream4,OV_Output_height*OV_Output_width*2);
+//		DMA_Cmd(DMA1_Stream4,ENABLE);
+//		while(DMA_GetFlagStatus(DMA1_Stream4,DMA_FLAG_TCIF4)!=SET);
+//		DMA_ClearFlag(DMA1_Stream4,DMA_FLAG_TCIF4);
+//		DMA_Cmd(DMA1_Stream4,DISABLE);
 		//
-		SPI_HW_CS_H();
+//		SPI_HW_CS_H();
 	
 	}
 }

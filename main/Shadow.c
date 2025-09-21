@@ -22,7 +22,9 @@
  */
 
 //QVGA = 320*240*2 , 内存不够，调整为300*200*2
-volatile uint8_t pic_data[300*200*2];
+volatile uint8_t pic_data[300*208*2];
+uint8_t aaa[500];
+uint8_t take_a_photo = 0;
 
 /**@brief  用于main中的接口
   */
@@ -41,7 +43,7 @@ void Main_Start(void* pvParameters)
 	taskENTER_CRITICAL();
 		//Func测试
 //	xTaskCreate(Task_Func,"Func",10,NULL,1,NULL);
-	xTaskCreate(Task_Camera,"Camera",64,NULL,2,NULL);
+	xTaskCreate(Task_Camera,"Camera",50,NULL,2,NULL);
 		//退出临界区
 	taskEXIT_CRITICAL();	
 	//打印各线程栈
@@ -68,7 +70,19 @@ int8_t Cmd(void)
 	{
 		Cmd_SPI();
 	}
-	
+	else if(Command("PHOTO"))
+	{
+		if(take_a_photo==0)
+		{
+			for(int i=5;i>0;i--)
+			{
+				vTaskDelay(1000);
+				U_Printf("%d",i);
+			}
+		}
+		take_a_photo = ~take_a_photo;
+		U_Printf("\r\nPhoto![%b] \r\n",take_a_photo);
+	}
 	//CLI :>
 	else if(Command("HELP"))
 	{

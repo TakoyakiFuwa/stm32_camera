@@ -53,7 +53,7 @@ void SPI_HW_Init(void)
 	DMA_InitStruct.DMA_DIR = DMA_DIR_MemoryToPeripheral;
 	DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;
 	DMA_InitStruct.DMA_FIFOThreshold = DMA_FIFOThreshold_1QuarterFull;
-	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)&pic_data[8];
+	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)&pic_data[1+22];
 	DMA_InitStruct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
 	DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
 	DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;

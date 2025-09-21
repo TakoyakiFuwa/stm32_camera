@@ -64,6 +64,22 @@ static void Init_ILI_PIN(void)
 	GPIO_Init(GPIOE,&GPIO_InitStruct);
 	GPIO_WriteBit(GPIOE,GPIO_Pin_12,Bit_SET);
 }
+inline void ILI_OneByte(uint8_t byte)
+{
+	for(int i=0;i<8;i++)
+	{
+		if( (byte&(0x80>>i)) != 0 )
+		{
+			PIN_DATAH;
+		}
+		else 
+		{
+			PIN_DATAL;
+		}
+		PIN_SCKL;
+		PIN_SCKH;
+	}
+}
 /**@brief  与TFT交换数据
   *@param  byte 交换的数据
   *@retval void

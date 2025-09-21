@@ -332,7 +332,7 @@ static void TFT_SoftwareInit(void)
 	TFT_WriteData(0x0E); 
 	
 	TFT_WriteCmd(0x36); 	//MX, MY, RGB mode 
-	TFT_WriteData(0xC0);	//YXV0 0000 翻转 前两位分别是Y X
+	TFT_WriteData(0x80);	//YXV0 0000 翻转 前两位分别是Y X
 							//第三位V是XY控制交换 应该是E0
 
 	//ST7735R Gamma Sequence
