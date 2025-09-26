@@ -19,6 +19,7 @@
  *		——2025/5/20-14:41
  */
 
+uint8_t camera_data[300*200*2];
 /**@brief  用于main中的接口
   */
 void Main_Start(void* pvParameters)
@@ -27,8 +28,9 @@ void Main_Start(void* pvParameters)
 	BF_Start();
 	//初始化 建议格式:Init_XXX()
 	Init_Func();
-	Init_TFT();	
-	Init_OV();
+	Init_TFT((uint8_t*)&camera_data[8]);	
+	Init_OV((uint32_t*)&camera_data[0]);
+	camera_data[0] = 0;
 	
 	//线程	 建议格式:Task_XXX()
 		//进入临界区
@@ -53,9 +55,9 @@ int8_t Cmd(void)
 	//COMMAND
 	if(Command("COMMAND"))
 	{
-		U_Printf("这里是F407VE的f4_ui板子的软件驱动测试文件 \r\n");
-		U_Printf("含有相机/st7735的纯软件测试 \r\n");
-		U_Printf("效率很低，仅用于设备上电测试 \r\n");
+		U_Printf("这里是F407VE的f4_ui板子的相机硬件驱动 \r\n");
+		U_Printf("含有相机/st7735的硬件驱动库 \r\n");
+		U_Printf("含有DMA，可以用 \r\n");
 	}
 		//FUNC测试
 	else if(Command("FUNC"))

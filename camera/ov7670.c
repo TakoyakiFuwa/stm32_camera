@@ -16,11 +16,12 @@
  *	摄像头输出尺寸在Init_OV的OV_config_windows改后两个参数
  *		2025/9/14-10:52.秦羽
  */
-/*	整理为OV7670的软件驱动
- *	软件驱动的效率相当低，仅用于模块上电点亮测试
- *		2025/9/26-15:25.秦羽
+/*	整理DCMI的硬件驱动....
+ *	好想好想和绿豆糕更多贴贴....
+ *	想了解更多穿搭...打扮...和身材更好一些...
+ *	然后会有更多贴贴会被喜欢更多吧....(?)
+ *		2025/9/26-19:30.秦羽
  */
-
 /*	这里是f4_ui板上的相机接口测试
  *	PD5		->	VCC
  *	PB9		->	SCL		//摄像头在上升沿读取
@@ -41,63 +42,19 @@
  *	PD3		->	SDA		//高位在前
  *	PD4		->	GND
  */
-#define OV_Output_width 	160		//最高好像是314 且会有黑边
-#define OV_Output_height	130		//最高248 达到240标准
-
+//输出尺寸
+#define OV_Output_width 	131		//最高好像是314 且会有黑边
+#define OV_Output_height	162		//最高248 达到240标准
+//数据存放地址
+extern uint8_t camera_data[];
 //SCL
 #define OV_SCL(x)	GPIO_WriteBit(GPIOB,GPIO_Pin_9,(BitAction)x);for(int i=0;i<100;i++);
 //SDA
 #define OV_SDA(x)	GPIO_WriteBit(GPIOD,GPIO_Pin_3,(BitAction)x);for(int i=0;i<100;i++);
 #define OV_SDA_D()	GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)
-//VS
-#define OV_VS()		(GPIOB->IDR & GPIO_Pin_8)
-//HS
-#define OV_HS()		(GPIOA->IDR & GPIO_Pin_4)
-//PLK
-#define OV_PLK()	(GPIOA->IDR & GPIO_Pin_6)
 
 /*  接口配置  */
 
-/**@brief  XCLK采用硬件频率引出方式
-  *@param  void
-  *@retval void
-  */
-static void OV_XCLK_ON(void)
-{
-	//引脚初始化
-	GPIO_InitTypeDef GPIO_InitStruct;
-	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
-	GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_8;
-	GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-	GPIO_Init(GPIOA,&GPIO_InitStruct);
-	//复用功能初始化
-	GPIO_PinAFConfig(GPIOA,GPIO_PinSource8,GPIO_AF_MCO);
-	RCC_MCO1Config(RCC_MCO1Source_HSI,RCC_MCO1Div_1);
-}
-/**@brief  XCLK采用软件方式
-  *@param  void
-  *@retval void
-  */
-static void OV_XCLK_OFF(void)
-{
-	//引脚初始化
-	GPIO_InitTypeDef GPIO_InitStruct;
-	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
-	GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_8;
-	GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-	GPIO_Init(GPIOA,&GPIO_InitStruct);
-}
-/**@brief  软件方式进行一次震荡
-  */
-static void OV_XCLK(void)
-{
-	GPIO_WriteBit(GPIOA,GPIO_Pin_8,Bit_SET);
-	GPIO_WriteBit(GPIOA,GPIO_Pin_8,Bit_RESET);
-}
 /**@brief  设置SDA线的方式
   *@param  GPIO_Mode_x 要设置成输出/输入的方式
   *@retval void
@@ -149,38 +106,49 @@ static void OV_PinInit(void)
 		//SDA
 	OV_SDA_Set(GPIO_Mode_OUT);
 		//XLK (PA8)
-	OV_XCLK_ON();
+	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_8;
+	GPIO_Init(GPIOA,&GPIO_InitStruct);
+			///复用输出时钟
+	GPIO_PinAFConfig(GPIOA,GPIO_PinSource8,GPIO_AF_MCO);
+	RCC_MCO1Config(RCC_MCO1Source_HSI,RCC_MCO1Div_1);
 	//摄像头向单片机输出引脚初始化
-	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
-		//D0~D7
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_6|GPIO_Pin_1|GPIO_Pin_0|GPIO_Pin_4|GPIO_Pin_5;
-	GPIO_Init(GPIOE,&GPIO_InitStruct);
-		//PLK
+	//DCMI引脚
+	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStruct.GPIO_OType = GPIO_OType_OD;
+	GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
+	//PLK
 	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_6;
 	GPIO_Init(GPIOA,&GPIO_InitStruct);
-		//VS
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_8;
+	//VS
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_7;
 	GPIO_Init(GPIOB,&GPIO_InitStruct);
-		//HS
+	//HS
 	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_4;
 	GPIO_Init(GPIOA,&GPIO_InitStruct);
-}
-/**@brief  软件引脚读一个像素
-  *@retval 读出的像素
-  */
-static uint8_t OV_RGBData(void)
-{
-	uint8_t data = 0;
-	//(GPIOx->IDR & GPIO_Pin)
-	data<<=1;if((GPIOE->IDR & GPIO_Pin_6)!=0){data+=1;}//D7
-	data<<=1;if((GPIOE->IDR & GPIO_Pin_5)!=0){data+=1;}
-	data<<=1;if((GPIOB->IDR & GPIO_Pin_6)!=0){data+=1;}
-	data<<=1;if((GPIOE->IDR & GPIO_Pin_4)!=0){data+=1;}
-	data<<=1;if((GPIOE->IDR & GPIO_Pin_1)!=0){data+=1;}
-	data<<=1;if((GPIOE->IDR & GPIO_Pin_0)!=0){data+=1;}
-	data<<=1;if((GPIOC->IDR & GPIO_Pin_7)!=0){data+=1;}
-	data<<=1;if((GPIOC->IDR & GPIO_Pin_6)!=0){data+=1;}//D0
-	return data;
+	//D0~7
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6;
+	GPIO_Init(GPIOE,&GPIO_InitStruct);
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_6|GPIO_Pin_7;
+	GPIO_Init(GPIOC,&GPIO_InitStruct);
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_6;
+	GPIO_Init(GPIOB,&GPIO_InitStruct);
+	//引脚复用
+	GPIO_PinAFConfig(GPIOA,GPIO_PinSource6,GPIO_AF_DCMI);
+	GPIO_PinAFConfig(GPIOB,GPIO_PinSource7,GPIO_AF_DCMI);
+	GPIO_PinAFConfig(GPIOA,GPIO_PinSource4,GPIO_AF_DCMI);
+	GPIO_PinAFConfig(GPIOE,GPIO_PinSource0,GPIO_AF_DCMI);
+	GPIO_PinAFConfig(GPIOE,GPIO_PinSource1,GPIO_AF_DCMI);
+	GPIO_PinAFConfig(GPIOE,GPIO_PinSource4,GPIO_AF_DCMI);
+	GPIO_PinAFConfig(GPIOE,GPIO_PinSource5,GPIO_AF_DCMI);
+	GPIO_PinAFConfig(GPIOE,GPIO_PinSource6,GPIO_AF_DCMI);
+	GPIO_PinAFConfig(GPIOC,GPIO_PinSource6,GPIO_AF_DCMI);
+	GPIO_PinAFConfig(GPIOC,GPIO_PinSource7,GPIO_AF_DCMI);
+	GPIO_PinAFConfig(GPIOB,GPIO_PinSource6,GPIO_AF_DCMI);
 }
 
 
@@ -356,53 +324,39 @@ static uint8_t SCCB_ReadReg(uint8_t addr)
 //}
 /**@brief  初始化
   */
+static void OV_DCMI_Init(uint32_t* data_addr);
 static void OV_config_window(unsigned int startx,unsigned int starty,unsigned int width, unsigned int height);
 static void OV_SoftwareInit(void);
-void Init_OV(void)
+void Init_OV(uint32_t* data_addr)
 {
 	OV_PinInit();
 		//这个初始化延迟很有必要
 	vTaskDelay(100);
 		//软件初始化
 	OV_SoftwareInit();
-		//设置窗口位置
-	OV_config_window(158,0,OV_Output_width,OV_Output_height);
+		//设置窗口位置152,0,-,-
+	OV_config_window(168,0,OV_Output_width,OV_Output_height);
 	vTaskDelay(100);
-	
+		//开启DCMI外设
+	OV_DCMI_Init(data_addr);
+	vTaskDelay(100);
+		
 	U_Printf("ov7670(相机)初始化完成 \r\n");
 }
-
-
 /*  读取像素  */
 /**@brief  获取像素并处理
-  *@param  scale  缩放
-  *@param  Func	  像素处理函数
+  *@param  void
   *@retval void
-  *@add	   非常奇怪，但软件驱动就是需要用Func来耦合...
   */
-void OV_GetPixels(void (*Func)(uint8_t))
+inline void OV_GetPixels(void)
 {	
-	uint32_t index = 0;
-	while(OV_VS()==0);
-	while(OV_VS()!=0);
-	OV_XCLK_OFF();
-	while(OV_VS()==0)
-	{
-		while(OV_HS()!=0)
-		{
-			while(OV_PLK()==0)
-			{
-				OV_XCLK();
-			}
-			Func(OV_RGBData());
-			while(OV_PLK()!=0)
-			{
-				OV_XCLK();
-			}
-		}
-		OV_XCLK();
-	}
-	OV_XCLK_ON();
+	DMA_SetCurrDataCounter(DMA2_Stream1,OV_Output_height*OV_Output_width/2);
+	DCMI_CaptureCmd(ENABLE);
+	DMA_Cmd(DMA2_Stream1,ENABLE);
+	while(DMA_GetFlagStatus(DMA2_Stream1,DMA_FLAG_TCIF1)!=SET);
+	DCMI_CaptureCmd(DISABLE);
+	DMA_ClearFlag(DMA2_Stream1,DMA_FLAG_TCIF1);
+	DMA_Cmd(DMA2_Stream1,DISABLE);
 }
 
 
@@ -410,6 +364,46 @@ void OV_GetPixels(void (*Func)(uint8_t))
 
 
 /*  所有的软件初始化有够...长...  */
+/**@brief  DCMI外设初始化
+  */
+static void OV_DCMI_Init(uint32_t* data_addr)
+{
+	//DCMI初始化
+	RCC_AHB2PeriphClockCmd(RCC_AHB2Periph_DCMI,ENABLE);
+	DCMI_InitTypeDef DCMI_InitStruct;
+	DCMI_InitStruct.DCMI_CaptureMode = DCMI_CaptureMode_Continuous;
+	DCMI_InitStruct.DCMI_CaptureRate = DCMI_CaptureRate_All_Frame;
+	DCMI_InitStruct.DCMI_ExtendedDataMode = DCMI_ExtendedDataMode_8b;
+	DCMI_InitStruct.DCMI_HSPolarity = DCMI_HSPolarity_Low;
+	DCMI_InitStruct.DCMI_PCKPolarity = DCMI_PCKPolarity_Rising;
+	DCMI_InitStruct.DCMI_SynchroMode = DCMI_SynchroMode_Hardware;
+	DCMI_InitStruct.DCMI_VSPolarity = DCMI_VSPolarity_High;
+	DCMI_Init(&DCMI_InitStruct);
+	DCMI_Cmd(ENABLE);
+	//所以DCMI不用DMA输出不了数据是吧.....	DMA2_Stream1_Channel1
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2,ENABLE);
+	DMA_Cmd(DMA2_Stream1,DISABLE);
+	DMA_InitTypeDef DMA_InitStruct;
+	DMA_InitStruct.DMA_BufferSize = OV_Output_width*OV_Output_height/2;
+	DMA_InitStruct.DMA_Channel = DMA_Channel_1;
+	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralToMemory;
+	DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;
+	DMA_InitStruct.DMA_FIFOThreshold = DMA_FIFOStatus_Full;
+	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)data_addr;
+	DMA_InitStruct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+	DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
+	DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
+	DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;
+	DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&DCMI->DR;
+	DMA_InitStruct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+	DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
+	DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+	DMA_InitStruct.DMA_Priority = DMA_Priority_High;
+	DMA_Init(DMA2_Stream1,&DMA_InitStruct);
+	DMA_Cmd(DMA2_Stream1,DISABLE);
+	//开启图像捕获
+	DCMI_CaptureCmd(ENABLE);
+}
 /**@brief  接收图像窗口设置
   */
 static void OV_config_window(unsigned int startx,unsigned int starty,unsigned int width, unsigned int height)
