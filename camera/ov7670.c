@@ -1,7 +1,7 @@
 #include "ov7670.h"
 /*  串口  */
 #include "U_USART.h"
-/*  系统  */
+/*  系统(仅提供delay)  */
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -16,11 +16,15 @@
  *	摄像头输出尺寸在Init_OV的OV_config_windows改后两个参数
  *		2025/9/14-10:52.秦羽
  */
- 
+/*	整理为OV7670的软件驱动
+ *	软件驱动的效率相当低，仅用于模块上电点亮测试
+ *		2025/9/26-15:25.秦羽
+ */
+
 /*	这里是f4_ui板上的相机接口测试
  *	PD5		->	VCC
  *	PB9		->	SCL		//摄像头在上升沿读取
- *	PB8		->	VS		//这里应该是PB7
+ *	PB8		->	VS
  *	PA6		->	PLK
  *	PE6		->	D7
  *	PB6		->	D5
@@ -37,8 +41,8 @@
  *	PD3		->	SDA		//高位在前
  *	PD4		->	GND
  */
-#define OV_Output_width 	300		//最高好像是314 且会有黑边
-#define OV_Output_height	208		//最高248 达到240标准
+#define OV_Output_width 	160		//最高好像是314 且会有黑边
+#define OV_Output_height	130		//最高248 达到240标准
 
 //SCL
 #define OV_SCL(x)	GPIO_WriteBit(GPIOB,GPIO_Pin_9,(BitAction)x);for(int i=0;i<100;i++);
@@ -46,101 +50,19 @@
 #define OV_SDA(x)	GPIO_WriteBit(GPIOD,GPIO_Pin_3,(BitAction)x);for(int i=0;i<100;i++);
 #define OV_SDA_D()	GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)
 //VS
-#define OV_VS()		(GPIOB->IDR & GPIO_Pin_7)
+#define OV_VS()		(GPIOB->IDR & GPIO_Pin_8)
 //HS
 #define OV_HS()		(GPIOA->IDR & GPIO_Pin_4)
 //PLK
 #define OV_PLK()	(GPIOA->IDR & GPIO_Pin_6)
 
+/*  接口配置  */
 
-/*  以下是引脚初始化相关内容  */
-/*  也是进行移植测试时需要更改的接口  */
-
-
-/**@brief 可直接用于测试的线程
-  *@-
-  */
-#include "TFT_ST7735.h"
-#include "TFT_ILI9341.h"
-//void OV_FuncPixel(uint8_t data)
-//{
-//	static uint8_t msb_pixel = 1;
-//	static uint16_t rgb565;
-//	if(msb_pixel==1)
-//	{
-//		msb_pixel = 0;
-//		rgb565 = data;
-//		rgb565<<=8;
-//	}
-//	else
-//	{
-//		msb_pixel = 1;
-//		rgb565+=data;
-//		TFT_Write16Data(rgb565);
-////		ILI_SendColor(rgb565);
-//	}
-//}
-/**@brief  ?这个只是测试线程吗(?)
-  */
-extern uint8_t pic_data[];
-extern uint8_t take_a_photo;
-#include "SPI_HW.h"
-void Task_Camera(void* pvParameters)
-{
-	while(1)
-	{
-		vTaskDelay(1);
-		if(take_a_photo!=0)
-		{
-			vTaskDelay(100);
-			continue;
-		}
-		//从相机获取数据
-		DMA_SetCurrDataCounter(DMA2_Stream1,OV_Output_width*OV_Output_height/2);
-		DCMI_CaptureCmd(ENABLE);
-		DMA_Cmd(DMA2_Stream1,ENABLE);
-		while(DMA_GetFlagStatus(DMA2_Stream1,DMA_FLAG_TCIF1)!=SET);
-		DCMI_CaptureCmd(DISABLE);
-		DMA_ClearFlag(DMA2_Stream1,DMA_FLAG_TCIF1);
-		DMA_Cmd(DMA2_Stream1,DISABLE);
-		
-		//输出到屏幕
-		ILI_SetRect(10,11,OV_Output_width,OV_Output_height);	
-		ILI_SendColor(0);
-		ILI_Swap(0);
-		GPIOE->BSRRH = (uint32_t)GPIO_Pin_10;
-		for(uint32_t i=0;i<OV_Output_height*OV_Output_width*2;i++)
-		{
-			ILI_OneByte(pic_data[i]);
-		}
-		GPIOE->BSRRL = (uint32_t)GPIO_Pin_10;
-		
-//		TFT_SetCursor(0,0,OV_Output_height,OV_Output_width);
-//		TFT_Write16Data(0);
-//		SPI_HW_CS_L();
-		//
-//		for(int i=0;i<OV_Output_height*OV_Output_width*2;i+=2)
-//		{
-//			SPI_HW_Send(pic_data[i-1]);
-//			SPI_HW_Send(pic_data[i]);
-//		}
-
-
-//		DMA_SetCurrDataCounter(DMA1_Stream4,OV_Output_height*OV_Output_width*2);
-//		DMA_Cmd(DMA1_Stream4,ENABLE);
-//		while(DMA_GetFlagStatus(DMA1_Stream4,DMA_FLAG_TCIF4)!=SET);
-//		DMA_ClearFlag(DMA1_Stream4,DMA_FLAG_TCIF4);
-//		DMA_Cmd(DMA1_Stream4,DISABLE);
-		//
-//		SPI_HW_CS_H();
-	
-	}
-}
-/**@brief  XCLK采用硬件方式
+/**@brief  XCLK采用硬件频率引出方式
   *@param  void
   *@retval void
   */
-void OV_XCLK_ON(void)
+static void OV_XCLK_ON(void)
 {
 	//引脚初始化
 	GPIO_InitTypeDef GPIO_InitStruct;
@@ -158,7 +80,7 @@ void OV_XCLK_ON(void)
   *@param  void
   *@retval void
   */
-void OV_XCLK_OFF(void)
+static void OV_XCLK_OFF(void)
 {
 	//引脚初始化
 	GPIO_InitTypeDef GPIO_InitStruct;
@@ -171,7 +93,7 @@ void OV_XCLK_OFF(void)
 }
 /**@brief  软件方式进行一次震荡
   */
-void OV_XCLK(void)
+static void OV_XCLK(void)
 {
 	GPIO_WriteBit(GPIOA,GPIO_Pin_8,Bit_SET);
 	GPIO_WriteBit(GPIOA,GPIO_Pin_8,Bit_RESET);
@@ -180,7 +102,7 @@ void OV_XCLK(void)
   *@param  GPIO_Mode_x 要设置成输出/输入的方式
   *@retval void
   */
-void OV_SDA_Set(GPIOMode_TypeDef GPIO_Mode_x)
+static void OV_SDA_Set(GPIOMode_TypeDef GPIO_Mode_x)
 {
 	GPIO_InitTypeDef GPIO_InitStruct;
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_x;
@@ -203,12 +125,11 @@ static void OV_PinInit(void)
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD,ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE,ENABLE);
 	//单片机向摄像头输出引脚初始化
-	//可能就是说的 >SCCB< 的功能
 	GPIO_InitTypeDef GPIO_InitStruct;
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
 		//VCC
 	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_5;
 	GPIO_Init(GPIOD,&GPIO_InitStruct);
@@ -229,85 +150,25 @@ static void OV_PinInit(void)
 	OV_SDA_Set(GPIO_Mode_OUT);
 		//XLK (PA8)
 	OV_XCLK_ON();
-	//直到这个项目写出来两天内....都没有初始化过摄像头向单片机输入引脚...
-	//这个程序到底是怎么跑起来的....
-	//大概是 >DCMI< 的功能
-		//引脚初始化
- 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
-	GPIO_InitStruct.GPIO_OType = GPIO_OType_OD;
-	GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-	//PLK
+	//摄像头向单片机输出引脚初始化
+	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
+		//D0~D7
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_6|GPIO_Pin_1|GPIO_Pin_0|GPIO_Pin_4|GPIO_Pin_5;
+	GPIO_Init(GPIOE,&GPIO_InitStruct);
+		//PLK
 	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_6;
 	GPIO_Init(GPIOA,&GPIO_InitStruct);
-	//VS
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_7;
+		//VS
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_8;
 	GPIO_Init(GPIOB,&GPIO_InitStruct);
-	//HS
+		//HS
 	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_4;
 	GPIO_Init(GPIOA,&GPIO_InitStruct);
-	//D0~7
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6;
-	GPIO_Init(GPIOE,&GPIO_InitStruct);
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_6|GPIO_Pin_7;
-	GPIO_Init(GPIOC,&GPIO_InitStruct);
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_6;
-	GPIO_Init(GPIOB,&GPIO_InitStruct);
-	//引脚复用
-	GPIO_PinAFConfig(GPIOA,GPIO_PinSource6,GPIO_AF_DCMI);
-	GPIO_PinAFConfig(GPIOB,GPIO_PinSource7,GPIO_AF_DCMI);
-	GPIO_PinAFConfig(GPIOA,GPIO_PinSource4,GPIO_AF_DCMI);
-	GPIO_PinAFConfig(GPIOE,GPIO_PinSource0,GPIO_AF_DCMI);
-	GPIO_PinAFConfig(GPIOE,GPIO_PinSource1,GPIO_AF_DCMI);
-	GPIO_PinAFConfig(GPIOE,GPIO_PinSource4,GPIO_AF_DCMI);
-	GPIO_PinAFConfig(GPIOE,GPIO_PinSource5,GPIO_AF_DCMI);
-	GPIO_PinAFConfig(GPIOE,GPIO_PinSource6,GPIO_AF_DCMI);
-	GPIO_PinAFConfig(GPIOC,GPIO_PinSource6,GPIO_AF_DCMI);
-	GPIO_PinAFConfig(GPIOC,GPIO_PinSource7,GPIO_AF_DCMI);
-	GPIO_PinAFConfig(GPIOB,GPIO_PinSource6,GPIO_AF_DCMI);
-		//DCMI初始化
-	RCC_AHB2PeriphClockCmd(RCC_AHB2Periph_DCMI,ENABLE);
-	DCMI_InitTypeDef DCMI_InitStruct;
-	DCMI_InitStruct.DCMI_CaptureMode = DCMI_CaptureMode_Continuous;
-	DCMI_InitStruct.DCMI_CaptureRate = DCMI_CaptureRate_All_Frame;
-	DCMI_InitStruct.DCMI_ExtendedDataMode = DCMI_ExtendedDataMode_8b;
-	DCMI_InitStruct.DCMI_HSPolarity = DCMI_HSPolarity_Low;
-	DCMI_InitStruct.DCMI_PCKPolarity = DCMI_PCKPolarity_Rising;
-	DCMI_InitStruct.DCMI_SynchroMode = DCMI_SynchroMode_Hardware;
-	DCMI_InitStruct.DCMI_VSPolarity = DCMI_VSPolarity_High;
-	DCMI_Init(&DCMI_InitStruct);
-	DCMI_Cmd(ENABLE);
-	//所以DCMI不用DMA输出不了数据是吧.....	DMA2_Stream1_Channel1
-	
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2,ENABLE);
-	DMA_Cmd(DMA2_Stream1,DISABLE);
-	DMA_InitTypeDef DMA_InitStruct;
-	DMA_InitStruct.DMA_BufferSize = OV_Output_width*OV_Output_height/2;
-	DMA_InitStruct.DMA_Channel = DMA_Channel_1;
-	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralToMemory;
-	DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;
-	DMA_InitStruct.DMA_FIFOThreshold = DMA_FIFOStatus_Full;
-	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)&pic_data[0];
-	DMA_InitStruct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-	DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
-	DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
-	DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;
-	DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&DCMI->DR;
-	DMA_InitStruct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-	DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
-	DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-	DMA_InitStruct.DMA_Priority = DMA_Priority_High;
-	DMA_Init(DMA2_Stream1,&DMA_InitStruct);
-	DMA_Cmd(DMA2_Stream1,DISABLE);
-		
-	//开启图像捕获
-	DCMI_CaptureCmd(ENABLE);
 }
-
 /**@brief  软件引脚读一个像素
   *@retval 读出的像素
   */
-uint8_t OV_RGBData(void)
+static uint8_t OV_RGBData(void)
 {
 	uint8_t data = 0;
 	//(GPIOx->IDR & GPIO_Pin)
@@ -323,7 +184,9 @@ uint8_t OV_RGBData(void)
 }
 
 
-/*  以下是SCCB通讯相关内容  */
+/*  以下是驱动，无需修改  */
+
+
 /*	通讯时SCL处于拉低的状态
  *	结束通信空闲时SCL应该一直处于上拉状态
  *	体现在SCCB_End最后没有拉低SCL
@@ -332,7 +195,7 @@ uint8_t OV_RGBData(void)
 /**@brief  开始通讯
   *@add    SCL高电平，SDA下降沿开始
   */
-void SCCB_Start(void)
+static void SCCB_Start(void)
 {
 	OV_SDA(1);
 	OV_SCL(1);
@@ -342,7 +205,7 @@ void SCCB_Start(void)
 /**@brief  结束通讯
   *@add    SCL高电平，SDA上升沿结束通讯
   */
-void SCCB_End(void)
+static void SCCB_End(void)
 {
 	OV_SDA(0);
 	OV_SCL(1);
@@ -351,7 +214,7 @@ void SCCB_End(void)
 /**@brief  发送应答
   *@param  act	0打算继续接收数据 1结束接收数据
   */
-void SCCB_SendAct(int8_t act)
+static void SCCB_SendAct(int8_t act)
 {
 	if(act!=0)
 	{
@@ -367,7 +230,7 @@ void SCCB_SendAct(int8_t act)
 /**@brief  接收一次应答
   *@retval 应答 0表示正常
   */
-uint8_t SCCB_ReceiveAct(void)
+static uint8_t SCCB_ReceiveAct(void)
 {
 	OV_SDA_Set(GPIO_Mode_IN);
 	OV_SCL(1);
@@ -383,7 +246,7 @@ uint8_t SCCB_ReceiveAct(void)
 /**@brief  SCCB发送1Byte数据
   *@param  byte 要发送的数据
   */
-void SCCB_SendByte(uint8_t byte)
+static void SCCB_SendByte(uint8_t byte)
 {
 	for(int i=0;i<8;i++)
 	{
@@ -402,7 +265,7 @@ void SCCB_SendByte(uint8_t byte)
 /**@brief  接收1Byte数据
   *@retval 接收到的数据
   */
-uint8_t SCCB_ReceiveByte(void)
+static uint8_t SCCB_ReceiveByte(void)
 {
 	uint8_t pin = 0;
 	uint8_t data = 0;
@@ -426,7 +289,7 @@ uint8_t SCCB_ReceiveByte(void)
   *@param  data  要写入的数据
   *@retval void
   */
-void SCCB_WriteReg(uint8_t addr,uint8_t data)
+static void SCCB_WriteReg(uint8_t addr,uint8_t data)
 {
 	//指定地址
 	SCCB_Start();
@@ -443,7 +306,7 @@ void SCCB_WriteReg(uint8_t addr,uint8_t data)
   *@param  addr  寄存器地址
   *@retval 读取到的数据
   */
-uint8_t SCCB_ReadReg(uint8_t addr)
+static uint8_t SCCB_ReadReg(uint8_t addr)
 {
 	//指定地址
 	SCCB_Start();
@@ -464,33 +327,33 @@ uint8_t SCCB_ReadReg(uint8_t addr)
 /**@breif  测试，扫描硬件应答ID
   *@add    OV7670的应答ID应该是0x42/0x43
   */
-void SCCB_Test_ScanID(void)
-{
-	uint8_t act = 0;
-	for(int i=0;i<0xFF;i++)
-	{
-		SCCB_Start();
-		SCCB_SendByte(i);
-		act = SCCB_ReceiveAct();
-		SCCB_End();
-		U_Printf("[%h]:%d \r\n",i,act);
-		if(act==0)
-		{
-			U_Printf("OV7670的ID号应该是0x42和0x43 \r\n");
-			break;
-		}
-	}
-}
+//static void SCCB_Test_ScanID(void)
+//{
+//	uint8_t act = 0;
+//	for(int i=0;i<0xFF;i++)
+//	{
+//		SCCB_Start();
+//		SCCB_SendByte(i);
+//		act = SCCB_ReceiveAct();
+//		SCCB_End();
+//		U_Printf("[%h]:%d \r\n",i,act);
+//		if(act==0)
+//		{
+//			U_Printf("OV7670的ID号应该是0x42和0x43 \r\n");
+//			break;
+//		}
+//	}
+//}
 /**@brief  测试，读取厂商ID号
   *@add    应该是0x76 0x73
   */
-void SCCB_Test_IDNumber(void)
-{
-	uint8_t MSB,LSB;
-	MSB = SCCB_ReadReg(0x0A);
-	LSB = SCCB_ReadReg(0x0B);
-	U_Printf("ov7670的ID应当是0x76-0x73:[%h-%h]",MSB,LSB);
-}
+//static void SCCB_Test_IDNumber(void)
+//{
+//	uint8_t MSB,LSB;
+//	MSB = SCCB_ReadReg(0x0A);
+//	LSB = SCCB_ReadReg(0x0B);
+//	U_Printf("ov7670的ID应当是0x76-0x73:[%h-%h]",MSB,LSB);
+//}
 /**@brief  初始化
   */
 static void OV_config_window(unsigned int startx,unsigned int starty,unsigned int width, unsigned int height);
@@ -503,8 +366,8 @@ void Init_OV(void)
 		//软件初始化
 	OV_SoftwareInit();
 		//设置窗口位置
-	OV_config_window(175,50,OV_Output_width,OV_Output_height);
-	
+	OV_config_window(158,0,OV_Output_width,OV_Output_height);
+	vTaskDelay(100);
 	
 	U_Printf("ov7670(相机)初始化完成 \r\n");
 }
@@ -515,10 +378,11 @@ void Init_OV(void)
   *@param  scale  缩放
   *@param  Func	  像素处理函数
   *@retval void
+  *@add	   非常奇怪，但软件驱动就是需要用Func来耦合...
   */
-void OV_PixelsGet(void)
+void OV_GetPixels(void (*Func)(uint8_t))
 {	
-	uint32_t i = 0;
+	uint32_t index = 0;
 	while(OV_VS()==0);
 	while(OV_VS()!=0);
 	OV_XCLK_OFF();
@@ -530,7 +394,7 @@ void OV_PixelsGet(void)
 			{
 				OV_XCLK();
 			}
-			pic_data[i++] = OV_RGBData();
+			Func(OV_RGBData());
 			while(OV_PLK()!=0)
 			{
 				OV_XCLK();
@@ -581,11 +445,11 @@ static void OV_config_window(unsigned int startx,unsigned int starty,unsigned in
 /**@brief  软件初始化
   */
 static void OV_SoftwareInit(void)
-{
+{	
 	SCCB_WriteReg(0x12, 0x80);	//SCCB复位
 	vTaskDelay(100);            
 	SCCB_WriteReg(0x8c, 0x00);    //RGB444
-	SCCB_WriteReg(0x3a, 0x04);    //行缓冲测试
+	SCCB_WriteReg(0x3a, 0x00);    //行缓冲测试
 	SCCB_WriteReg(0x40, 0xd0);    //RGB565
 	SCCB_WriteReg(0x8c, 0x00);    //RGB444
 	SCCB_WriteReg(0x12, 0x14);    //QVGA RGB
@@ -602,7 +466,7 @@ static void OV_SoftwareInit(void)
 	SCCB_WriteReg(0x72, 0x11);    
 	SCCB_WriteReg(0x73, 0x70);    //PCLK DIV						建议0x70
 	SCCB_WriteReg(0xa2, 0x01);    //PCLK Delay	像素延时//0100	建议0x01
-	SCCB_WriteReg(0x11, 0x08);    //PCLK 时钟分频 fps 数值越大刷新越慢但越稳定 建议0x07
+	SCCB_WriteReg(0x11, 0x09);    //PCLK 时钟分频 fps 数值越大刷新越慢但越稳定 建议0x07
 	//SCCB_WriteReg(0x15 , 0x31);
 	SCCB_WriteReg(0x7a, 0x20); 
 	SCCB_WriteReg(0x7b, 0x1c); 
@@ -621,7 +485,7 @@ static void OV_SoftwareInit(void)
 	SCCB_WriteReg(0x88, 0xd7);
 	SCCB_WriteReg(0x89, 0xe8);
 	 
-	SCCB_WriteReg(0x32,0xb6);
+	SCCB_WriteReg(0x32, 0xb6);
 	
 	SCCB_WriteReg(0x13, 0xff); 
 	SCCB_WriteReg(0x00, 0x00);

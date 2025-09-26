@@ -29,85 +29,35 @@ void Task_Func(void* pvParameters)
 		vTaskDelay(200);
 	}
 }
-
-/*  以下是关于相机测试的内容  */
-
-/*
-uint32_t line_count = 0;
-uint8_t line_count_signal = 0;
-void OV_PixelsGet(void (*Func)(uint8_t))
-{	
-	while(OV_VS()==0);
-	while(OV_VS()!=0);
-	OV_XCLK_OFF();
-	while(OV_VS()==0)
-	{
-		line_count_signal = 1;
-		while(OV_HS()!=0)
-		{
-			//测试v
-			if(line_count_signal==1)
-			{
-				line_count++;
-				line_count_signal = 0;
-			}
-			//测试^
-			while(OV_PLK()==0)
-			{
-				OV_XCLK();
-			}
-			Func(OV_RGBData());
-			while(OV_PLK()!=0)
-			{
-				OV_XCLK();
-			}
-		}
-		OV_XCLK();
-	}
-	OV_XCLK_ON();
-}
-extern uint32_t line_count;
-uint16_t pixel_count = 0;
-const uint8_t scale = 2;
-void TFT(uint8_t data)
+/**@brief  摄像头采集，屏幕刷新线程
+  */
+extern const unsigned char gImage_a[];
+void Task_Camera(void* pvParameters)
 {
-	static uint8_t high_byte = 1;
-	static uint16_t pixel = 0;
-	if(line_count%scale!=0)
+	//赢得了，木勾比赛，第一！
+	TFT_SetCursor(0,0,107,128);
+	TFT_SPI_Start();
+	for(int i=0;i<5;i++)
 	{
-		return;
+		TFT_SPI_Send(0);
+		TFT_SPI_Send(0);
 	}
-	if(high_byte==1)
+	for(int i=107*128*2-1;i>=0;i--)
 	{
-		high_byte = 0;
-		pixel = data;
-		pixel<<=8;
+		TFT_SPI_Send(gImage_a[i]);
 	}
-	else
-	{
-		high_byte =1;
-		if(pixel_count++%scale!=0)
-		{
-			return;
-		}
-		pixel+=data;
-		TFT_Write16Data(pixel);
-	}
-
-}
-void Task_Camera_WithPixelCount(void* pvParameters)
-{
+	TFT_SPI_Stop();
 	while(1)
 	{
-		vTaskDelay(10);
-		TFT_SetCursor(0,0,156,120);
-		OV_PixelsGet(TFT);
-		U_Printf("hight:%d   width:%d   pixel:%d \r\n",line_count,pixel_count*scale/line_count,pixel_count*scale);
-		line_count = 0;
-		pixel_count = 0;
+		vTaskDelay(100);
+		//采集数据
+		TFT_SetCursor(0,0,160,130);
+		TFT_SPI_Start();
+		OV_GetPixels(TFT_SPI_Send);
+		TFT_SPI_Stop();
 	}
 }
-*/
+
 
 
 /**@brief  Func命令行接口

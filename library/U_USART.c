@@ -8,7 +8,7 @@
  *		——2025/5/20-15:02
  */
 
-uint8_t USART_Buff[256];	 //缓冲区
+uint8_t USART_Buff[512];	 //缓冲区
 int     USART_Buf_length = 0;//缓冲区有效数据长度
 int8_t 	USART_RX_Signal  = 0;//接收到新数据的标志位 1代表有新数据
 

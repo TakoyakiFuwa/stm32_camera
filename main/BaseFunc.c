@@ -43,10 +43,10 @@ void BF_Start(void)
 	taskENTER_CRITICAL();
 		//指示灯&看门狗复位
 	TaskHandle_t BF_TASK_LED_Handler;
-	xTaskCreate(BF_Task_LED,"BF_LED",32,NULL,1,&BF_TASK_LED_Handler);
+	xTaskCreate(BF_Task_LED,"BF_LED",32,NULL,8,&BF_TASK_LED_Handler);
 		//命令行
 	TaskHandle_t BF_TASK_CLI_Handler;
-	xTaskCreate(BF_Task_CLI,"BF_CLI",64,NULL,5,&BF_TASK_CLI_Handler);
+	xTaskCreate(BF_Task_CLI,"BF_CLI",128,NULL,10,&BF_TASK_CLI_Handler);
 	//退出临界区
 	taskEXIT_CRITICAL();
 }

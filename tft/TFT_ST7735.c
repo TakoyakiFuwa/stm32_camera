@@ -1,30 +1,23 @@
 #include "TFT_ST7735.h"
-/*  协议库  */
-#include "SPI_SF.h"
-#include "SPI_HW.h"
-/*  OS库  */
+/*  OS库(仅提供Delay)  */
 #include "FreeRTOS.h"
 #include "task.h"
 /*  串口调试库  */
 #include "U_USART.h"
-
 
 /*	后天早上去学校了...
  *	大学...在学校里摆烂的更好呢
  *	但是这两天还是很难说的焦虑
  *			-2025/2/20-17:17
  */
-
-/*  SPI接口  */
-/*  这部分移植在TFT_SPI_SendData  */
-	//软件
-//#define SPI_Init()		SPI_SF_Init()
-	//硬件
-#define SPI_Init()		SPI_HW_Init()
-
+/*	修改为st7735的纯软件驱动
+ *	软件SPI接口直接接入这个文件....
+ *	:)
+ *	SPI确实用DMA比较快，这个文件仅用于屏幕上电点亮测试
+ *			-2025/9/26-14:56
+ */
 
 /*  移植配置区域  */
-
 /*	当前在处理F4_UI板子
  *	PD14	(3)		-> GND
  *	PD13	(4)		-> VCC
@@ -37,17 +30,32 @@
  *	PB14	(11)	-> VCC
  *	PB12	(12)	-> CS
  */
-/*	方向为: （适合相机输出）
+#define TFT_ROTATION 0xE0	//YXV0 0000
+/*	方向为: （适合BMP输出）
  *		
- *	 			x^
- *		^  ^  ^	 |
- *		|  |  |	 |
- *		|  |  |	 |
- *		3  2  1	 |
- *	y			 |
- *	<-——-——-——-——+
+ *	^ y	
+ *	|		
+ *	|	3————>
+ *	|	2————>
+ *	|	1————>
+ *	|			 x
+ *	+-——-——-——-——>
  */
 
+
+/*  需要修改的接口  */
+
+
+/*  SPI通讯处理  */
+	//片选线
+#define TFT_SPI_CS_L()		GPIOB->BSRRH = GPIO_Pin_12
+#define TFT_SPI_CS_H()		GPIOB->BSRRL = GPIO_Pin_12
+	//时钟线
+#define TFT_SPI_SCK_L()		GPIOB->BSRRH = GPIO_Pin_13
+#define TFT_SPI_SCK_H()		GPIOB->BSRRL = GPIO_Pin_13
+	//数据线
+#define TFT_SPI_MOSI_L()	GPIOB->BSRRH = GPIO_Pin_15
+#define TFT_SPI_MOSI_H()	GPIOB->BSRRL = GPIO_Pin_15
 /*  TFT屏幕处理  */
 	//低电平复位
 #define TFT_RST_L()		GPIOD->BSRRH = GPIO_Pin_11
@@ -71,29 +79,23 @@ static void TFT_PinInit()
 	GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_14;
-	GPIO_Init(GPIOB,&GPIO_InitStruct);
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_11|GPIO_Pin_12|GPIO_Pin_13|GPIO_Pin_14;
+		//PD
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_14|GPIO_Pin_13|GPIO_Pin_12|GPIO_Pin_11|GPIO_Pin_10|GPIO_Pin_9;
 	GPIO_Init(GPIOD,&GPIO_InitStruct);
-	
-	GPIO_WriteBit(GPIOD,GPIO_Pin_14|GPIO_Pin_12,Bit_RESET);
-	GPIO_WriteBit(GPIOD,GPIO_Pin_13|GPIO_Pin_9,Bit_SET);
+		//PB
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_12|GPIO_Pin_13|GPIO_Pin_14|GPIO_Pin_15;
+	GPIO_Init(GPIOB,&GPIO_InitStruct);
+	//电平初始化
+		//VCC/RST
+	GPIO_WriteBit(GPIOD,GPIO_Pin_13|GPIO_Pin_11|GPIO_Pin_9,Bit_SET);
 	GPIO_WriteBit(GPIOB,GPIO_Pin_14,Bit_SET);
+		//GND
+	GPIO_WriteBit(GPIOD,GPIO_Pin_12|GPIO_Pin_14,Bit_RESET);
 }
-/**@brief  发送数据
-  *@-	   接口这里...就...很难办
-  */
-static void TFT_SPI_SendData(uint8_t data)
-{
-	//软件
-//	SPI_SF_CS_L();
-//	SPI_SF_Send(data);
-//	SPI_SF_CS_H();
-	//硬件
-	SPI_HW_CS_L();
-	SPI_HW_Send(data);
-	SPI_HW_CS_H();
-}
+
+
+/*  下面是驱动，无需修改  */
+
 
 static void TFT_SoftwareInit(void);
 /**@brief  TFT初始化
@@ -102,11 +104,11 @@ static void TFT_SoftwareInit(void);
   */
 void Init_TFT(void)
 {
-	//通信初始化
-	SPI_Init();
-	vTaskDelay(200);//SPI外设初始化后应Delay一小段时间等待完成后继续进行
 	//引脚初始化
 	TFT_PinInit();
+		//SPI初始电平
+	TFT_SPI_CS_H();
+	TFT_SPI_SCK_L();
 	//硬件复位
 	TFT_RST_L();
 	vTaskDelay(100);
@@ -140,6 +142,39 @@ void Init_TFT(void)
 	
 	U_Printf("TFT初始化完成 \r\n");
 }
+/**@brief  SPI开始通信
+  */
+inline void TFT_SPI_Start(void)
+{
+	TFT_DC_H();
+	TFT_SPI_CS_L();
+}
+/**@brief  SPI停止通信
+  */
+inline void TFT_SPI_Stop(void)
+{
+	TFT_SPI_CS_H();
+}
+/**@brief  SPI发送数据
+  *@param  byte 一字节
+  *@retval void
+  */
+void TFT_SPI_Send(uint8_t byte)
+{
+	for(int i=0;i<8;i++)
+	{
+		if( (byte&(0x80>>i))==0 )
+		{
+			TFT_SPI_MOSI_L();
+		}
+		else 
+		{
+			TFT_SPI_MOSI_H();
+		}
+		TFT_SPI_SCK_H();
+		TFT_SPI_SCK_L();
+	}
+}
 /**@brief （内部函数）向TFT发送8位指令
   *@param  cmd   要发送的指令
   *@retval void
@@ -147,7 +182,9 @@ void Init_TFT(void)
 static void TFT_WriteCmd(uint8_t cmd)
 {
 	TFT_DC_L();
-	TFT_SPI_SendData(cmd);
+	TFT_SPI_CS_L();
+	TFT_SPI_Send(cmd);
+	TFT_SPI_CS_H();
 }
 /**@brief （内部函数）向TFT发送8位数据
   *@param  data  要发送的数据
@@ -156,7 +193,9 @@ static void TFT_WriteCmd(uint8_t cmd)
 static void TFT_WriteData(uint8_t data)
 {
 	TFT_DC_H();
-	TFT_SPI_SendData(data);
+	TFT_SPI_CS_L();
+	TFT_SPI_Send(data);
+	TFT_SPI_CS_H();
 }
 /**@brief  发送16位数据
   *@param  data  16位数据
@@ -165,8 +204,10 @@ static void TFT_WriteData(uint8_t data)
 void TFT_Write16Data(uint16_t RGB_565)
 {
 	TFT_DC_H();
-	TFT_SPI_SendData((RGB_565>>8));
-	TFT_SPI_SendData(RGB_565);
+	TFT_SPI_CS_L();
+	TFT_SPI_Send((RGB_565>>8));
+	TFT_SPI_Send(RGB_565);
+	TFT_SPI_CS_H();
 }
 /**@brief  从RGB888改成RGB555
   *@param  color RGB888数据
@@ -197,83 +238,25 @@ uint16_t TFT_RGB888To565(uint32_t RGB_888)
 }
 /**@brief  设置写入范围
   *@param  x_start y_start 	写入位置
-  *@param  width height	宽度/高度
+  *@param  weight height	宽度/高度
   *@retval void
+  *@add	   可以把0x2a和0x2b交换来实现某种意义上的换方向(?)
   */
-void TFT_SetCursor(uint8_t x,uint8_t y,uint8_t width,uint8_t height)
+void TFT_SetCursor(uint8_t x,uint8_t y,uint8_t weight,uint8_t height)
 {
-	TFT_WriteCmd(0x2b);//x轴
+	TFT_WriteCmd(0x2a);//x轴
 	TFT_WriteData(0x00);
 	TFT_WriteData(x);//x起始
 	TFT_WriteData(0x00);
-	TFT_WriteData(x+width-1);//x终止
+	TFT_WriteData(x+weight-1);//x终止
 	
-	TFT_WriteCmd(0x2a);//y轴
+	TFT_WriteCmd(0x2b);//y轴
 	TFT_WriteData(0x00);
 	TFT_WriteData(y);//y起始
 	TFT_WriteData(0x00);
 	TFT_WriteData(y+height-1);//y终止
 	
 	TFT_WriteCmd(0x2C);//开始写入
-}
-/**@brief  TFT单色清屏
-  *@param  color 清屏颜色(RGB888)
-  *@retval void
-  */
-void TFT_Clear(uint32_t RGB_888)
-{
-	TFT_SetCursor(0,0,160,160);
-	uint16_t rgb565 = TFT_RGB888To565(RGB_888);
-	for(int i=0;i<160*160;i++)
-	{
-		TFT_Write16Data(rgb565);
-	}
-}
-
-void TFT_Test(void)
-{
-	U_Printf("TFT测试区 \r\n");
-	//XY轴测试
-	//红 黄
-	//蓝 绿
-	uint16_t tft_delay_time = 0;
-	uint8_t tft_csdelay_time = 0;
-	uint32_t RED=0xd95763;
-	uint32_t YEL=0xfbf236;
-	uint32_t BLU=0x5fcde4;
-	uint32_t GRE=0x6abe30;
-	TFT_SetCursor(0,0,50,50);
-	vTaskDelay(tft_csdelay_time);
-	uint16_t rgb565 = TFT_RGB888To565(RED);
-	for(int i=0;i<50*50;i++)
-	{
-		TFT_Write16Data(rgb565);
-		vTaskDelay(tft_delay_time);
-	}
-	TFT_SetCursor(50,0,50,50);
-	vTaskDelay(tft_csdelay_time);
-	rgb565 = TFT_RGB888To565(YEL);
-	for(int i=0;i<50*50;i++)
-	{
-		TFT_Write16Data(rgb565);
-		vTaskDelay(tft_delay_time);
-	}
-	TFT_SetCursor(0,50,50,50);
-	vTaskDelay(tft_csdelay_time);
-	rgb565 = TFT_RGB888To565(BLU);
-	for(int i=0;i<50*50;i++)
-	{
-		TFT_Write16Data(rgb565);
-		vTaskDelay(tft_delay_time);
-	}	
-	TFT_SetCursor(50,50,50,50);
-	vTaskDelay(tft_csdelay_time);
-	rgb565 = TFT_RGB888To565(GRE);
-	for(int i=0;i<50*50;i++)
-	{
-		TFT_Write16Data(rgb565);
-		vTaskDelay(tft_delay_time);
-	}
 }
 
 /**@brief  TFT屏幕软件初始化
@@ -332,8 +315,8 @@ static void TFT_SoftwareInit(void)
 	TFT_WriteData(0x0E); 
 	
 	TFT_WriteCmd(0x36); 	//MX, MY, RGB mode 
-	TFT_WriteData(0x80);	//YXV0 0000 翻转 前两位分别是Y X
-							//第三位V是XY控制交换 应该是E0
+	TFT_WriteData(TFT_ROTATION);	//YXV0 0000 翻转 前两位分别是Y X
+							//第三位V是XY控制交换
 
 	//ST7735R Gamma Sequence
 	TFT_WriteCmd(0xe0); 	//Gamma (‘+’polarity) Correction Characteristics Setting
