@@ -1101,19 +1101,19 @@
           <GroupName>tft</GroupName>
           <Files>
             <File>
-              <FileName>TFT_ST7735.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\tft\TFT_ST7735.c</FilePath>
-            </File>
-            <File>
-              <FileName>TFT_ST7735.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\tft\TFT_ST7735.h</FilePath>
-            </File>
-            <File>
               <FileName>font.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\tft\font.c</FilePath>
+            </File>
+            <File>
+              <FileName>TFT_ST7789V.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\tft\TFT_ST7789V.c</FilePath>
+            </File>
+            <File>
+              <FileName>TFT_ST7789V.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\tft\TFT_ST7789V.h</FilePath>
             </File>
           </Files>
         </Group>

@@ -10,7 +10,7 @@
 #include "task.h"
 /*  外设库  */
 #include "U_USART.h"
-#include "TFT_ST7735.h"
+#include "TFT_ST7789V.h"
 #include "ov7670.h"
 
 /*	希望我这次重新写模板可以用的久一点...
@@ -19,7 +19,7 @@
  *		——2025/5/20-14:41
  */
 
-uint8_t camera_data[300*200*2];
+uint8_t camera_data[300*206*2];
 /**@brief  用于main中的接口
   */
 void Main_Start(void* pvParameters)
@@ -28,7 +28,7 @@ void Main_Start(void* pvParameters)
 	BF_Start();
 	//初始化 建议格式:Init_XXX()
 	Init_Func();
-	Init_TFT((uint8_t*)&camera_data[8]);	
+	Init_TFT((uint8_t*)&camera_data[0]);	
 	Init_OV((uint32_t*)&camera_data[0]);
 	camera_data[0] = 0;
 	
@@ -55,9 +55,9 @@ int8_t Cmd(void)
 	//COMMAND
 	if(Command("COMMAND"))
 	{
-		U_Printf("这里是F407VE的f4_ui板子的相机硬件驱动 \r\n");
-		U_Printf("含有相机/st7735的硬件驱动库 \r\n");
-		U_Printf("含有DMA，可以用 \r\n");
+		U_Printf("这里是相机板子的驱动程序... \r\n");
+		U_Printf("320*240的ST7789V屏幕驱动，使用OV7670摄像头... \r\n");
+		U_Printf("SD卡的程序...正在写... \r\n");
 	}
 		//FUNC测试
 	else if(Command("FUNC"))

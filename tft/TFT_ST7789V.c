@@ -1,4 +1,4 @@
-#include "TFT_ST7735.h"
+#include "TFT_ST7789V.h"
 /*  OS库(仅提供Delay)  */
 #include "FreeRTOS.h"
 #include "task.h"
@@ -30,16 +30,15 @@
  *	PB14	(11)	-> VCC
  *	PB12	(12)	-> CS
  */
-#define TFT_ROTATION 0xC0	//YXV0 0000
+#define TFT_ROTATION 0x60	//YXV0 0000
 /*	方向为: （适合f4_ui的OV7670方向输出）
- *				   x^
- *				 	|
- *		^	^	^	|
- *		|	|	|	|
- *		|	|	|	|
- *		|	|	|	|
- *	y	3	2	1	|
- *	<-——-——-——-——-——+	
+ *		+-——-——-——-——>
+ *		|			 x	
+ *		|	1—————>
+ *		|	2—————>
+ *		|	3—————>
+ *		|
+ *		v y 
  */
 
 
@@ -52,12 +51,12 @@
 #define TFT_SPI_CS_H()		GPIOB->BSRRL = GPIO_Pin_12
 /*  TFT屏幕处理  */
 	//低电平复位
-#define TFT_RST_L()		GPIOD->BSRRH = GPIO_Pin_11
-#define TFT_RST_H()		GPIOD->BSRRL = GPIO_Pin_11
+#define TFT_RST_L()		GPIOC->BSRRH = GPIO_Pin_4
+#define TFT_RST_H()		GPIOC->BSRRL = GPIO_Pin_4
 	//低电平指令
-#define TFT_DC_L()		GPIOD->BSRRH = GPIO_Pin_10
+#define TFT_DC_L()		GPIOC->BSRRH = GPIO_Pin_5
 	//高电平数据
-#define TFT_DC_H()		GPIOD->BSRRL = GPIO_Pin_10
+#define TFT_DC_H()		GPIOC->BSRRL = GPIO_Pin_5
 /**@brief  接口 配置相关引脚初始化
   *@param  void
   *@retval void
@@ -66,6 +65,7 @@ static void TFT_PinInit()
 {
 	//时钟初始化
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB,ENABLE);
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC,ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD,ENABLE);
 	//引脚初始化
 	GPIO_InitTypeDef GPIO_InitStruct;
@@ -74,17 +74,16 @@ static void TFT_PinInit()
 	GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
 		//PD
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_14|GPIO_Pin_13|GPIO_Pin_12|GPIO_Pin_11|GPIO_Pin_10|GPIO_Pin_9;
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_14|GPIO_Pin_13|GPIO_Pin_12|GPIO_Pin_9;
 	GPIO_Init(GPIOD,&GPIO_InitStruct);
 		//PB
 	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_12|GPIO_Pin_14;
 	GPIO_Init(GPIOB,&GPIO_InitStruct);
+		//PC
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_4|GPIO_Pin_5;
+	GPIO_Init(GPIOC,&GPIO_InitStruct);
 	//电平初始化
-		//VCC/RST
-	GPIO_WriteBit(GPIOD,GPIO_Pin_13|GPIO_Pin_11|GPIO_Pin_9,Bit_SET);
-	GPIO_WriteBit(GPIOB,GPIO_Pin_14,Bit_SET);
-		//GND
-	GPIO_WriteBit(GPIOD,GPIO_Pin_12|GPIO_Pin_14,Bit_RESET);
+	GPIO_WriteBit(GPIOC,GPIO_Pin_4,Bit_SET);
 	//复用引脚初始化
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
@@ -124,38 +123,38 @@ void Init_TFT(uint8_t* data_addr)
 	TFT_SoftwareInit();
 	vTaskDelay(50);
 	//初始化图像
-	uint8_t height = 140/3;
-	uint8_t width = 162;
+	uint16_t height = 240/3;
+	uint16_t width = 320;
 	uint16_t rgb565 = TFT_RGB888To565(0xffc7c7);
-	TFT_SetCursor(0,0,height,width);
+	TFT_SetCursor(0,0,width,height);
 	for(int i=0;i<width*height;i++)
 	{
 		TFT_Write16Data(rgb565);
 	}
 	rgb565 = TFT_RGB888To565(0xf6f6f6);
-	TFT_SetCursor(height*1,0,height,width);
+	TFT_SetCursor(0,height*1,width,height);
 	for(int i=0;i<width*height;i++)
 	{
 		TFT_Write16Data(rgb565);
 	}
 	rgb565 = TFT_RGB888To565(0x71c9ce);
-	TFT_SetCursor(height*2,0,height,width);
+	TFT_SetCursor(0,height*2,width,height);
 	for(int i=0;i<width*height;i++)
 	{
 		TFT_Write16Data(rgb565);
 	}
-	
 	U_Printf("TFT初始化完成 \r\n");
 }
 /**@brief  硬件SPI初始化
   */
+DMA_InitTypeDef DMA_InitStruct;
 static void TFT_SPI_Init(uint8_t* data_addr)
 {
 	//SPI初始化
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2,ENABLE);
 	SPI_InitTypeDef SPI_InitStruct;
 	SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2;
-	SPI_InitStruct.SPI_CPHA = SPI_CPHA_2Edge;
+	SPI_InitStruct.SPI_CPHA = SPI_CPHA_1Edge;
 	SPI_InitStruct.SPI_CPOL = SPI_CPOL_Low;
 	SPI_InitStruct.SPI_CRCPolynomial = 7;
 	SPI_InitStruct.SPI_DataSize = SPI_DataSize_8b;
@@ -168,7 +167,6 @@ static void TFT_SPI_Init(uint8_t* data_addr)
 	//DMA设置 DMA1_Channel0_Stream4
 	SPI_I2S_DMACmd(SPI2,SPI_I2S_DMAReq_Tx,ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1,ENABLE);
-	DMA_InitTypeDef DMA_InitStruct;
 	DMA_InitStruct.DMA_BufferSize = 160*128*2;
 	DMA_InitStruct.DMA_Channel = DMA_Channel_0;
 	DMA_InitStruct.DMA_DIR = DMA_DIR_MemoryToPeripheral;
@@ -223,6 +221,15 @@ inline void TFT_SPI_DMA(uint16_t counts)
 	while(DMA_GetFlagStatus(DMA1_Stream4,DMA_FLAG_TCIF4)!=SET);
 	DMA_ClearFlag(DMA1_Stream4,DMA_FLAG_TCIF4);
 	TFT_SPI_Stop();
+}
+/**@brief  设置DMA地址
+  *@param  addr 要设置的地址
+  *@retval void
+  */
+inline void TFT_SPI_SetAddr(uint8_t* addr)
+{
+	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)addr;
+	DMA_Init(DMA1_Stream4,&DMA_InitStruct);
 }
 /**@brief （内部函数）向TFT发送8位指令
   *@param  cmd   要发送的指令
@@ -291,19 +298,18 @@ uint16_t TFT_RGB888To565(uint32_t RGB_888)
   *@retval void
   *@add	   可以把0x2a和0x2b交换来实现某种意义上的换方向(?)
   */
-void TFT_SetCursor(uint8_t x,uint8_t y,uint8_t weight,uint8_t height)
+void TFT_SetCursor(uint16_t x,uint16_t y,uint16_t width,uint16_t height)
 {
+	uint16_t x_end = x+width-1;
+	uint16_t y_end = y+height-1;
 	TFT_WriteCmd(0x2a);//x轴
-	TFT_WriteData(0x00);
-	TFT_WriteData(x);//x起始
-	TFT_WriteData(0x00);
-	TFT_WriteData(x+weight-1);//x终止
+	TFT_Write16Data(x);
+	TFT_Write16Data(x_end);
+	
 	
 	TFT_WriteCmd(0x2b);//y轴
-	TFT_WriteData(0x00);
-	TFT_WriteData(y);//y起始
-	TFT_WriteData(0x00);
-	TFT_WriteData(y+height-1);//y终止
+	TFT_Write16Data(y);
+	TFT_Write16Data(y_end);
 	
 	TFT_WriteCmd(0x2C);//开始写入
 }
@@ -321,119 +327,75 @@ void TFT_SetRotation(uint8_t rotation)
   *@retval void
   */
 static void TFT_SoftwareInit(void)
-{		
-		//解除睡眠
-	TFT_WriteCmd(0x11);		//11h解除睡眠 10h进入睡眠
-	vTaskDelay(120);
-		//初始化
-	
-	//ST7735R Frame Rate
-	TFT_WriteCmd(0xB1); 	//Frame Raye Control 帧频
-	TFT_WriteData(0x01); 
-	TFT_WriteData(0x2C); 
-	TFT_WriteData(0x2D); 
+{			
+	TFT_WriteCmd(0x11); 
+    vTaskDelay(120);         //Delay 120ms 
 
-	TFT_WriteCmd(0xB2); 
-	TFT_WriteData(0x01); 
-	TFT_WriteData(0x2C); 
-	TFT_WriteData(0x2D); 
+    TFT_WriteCmd(0x36); 
+    TFT_WriteData(TFT_ROTATION); //a0：横屏，00:竖屏，60：横屏镜像
+    TFT_WriteCmd(0x3a); 
+    TFT_WriteData(0x05); 
 
-	TFT_WriteCmd(0xB3); 
-	TFT_WriteData(0x01); 
-	TFT_WriteData(0x2C); 
-	TFT_WriteData(0x2D); 
-	TFT_WriteData(0x01); 
-	TFT_WriteData(0x2C); 
-	TFT_WriteData(0x2D); 
-	
-	TFT_WriteCmd(0xB4);		//Display Inversion Control 反转控制
-	TFT_WriteData(0x07); 
-	
-	//ST7735R Power Sequence
-	TFT_WriteCmd(0xC0); 
-	TFT_WriteData(0xA2); 
-	TFT_WriteData(0x02); 
-	TFT_WriteData(0x84); 
-	TFT_WriteCmd(0xC1); 
-	TFT_WriteData(0xC5); 
+    TFT_WriteCmd(0xb2); 
+    TFT_WriteData(0x0c); 
+    TFT_WriteData(0x0c); 
+    TFT_WriteData(0x00); 
+    TFT_WriteData(0x33); 
+    TFT_WriteData(0x33); 
+    TFT_WriteCmd(0xb7); 
+    TFT_WriteData(0x35); 
+   
+    //24脚2.4寸屏初始化程序
+    TFT_WriteCmd(0xbb); 
+    TFT_WriteData(0x2b); 
+    TFT_WriteCmd(0xc0); 
+    TFT_WriteData(0x2c); 
+    TFT_WriteCmd(0xc2); 
+    TFT_WriteData(0x01); 
+    TFT_WriteCmd(0xc3); 
+    TFT_WriteData(0x11); 
+    TFT_WriteCmd(0xc4); 
+    //ST7789V 54
+    TFT_WriteData(0x20); 
+    TFT_WriteCmd(0xc6); 
+    TFT_WriteData(0x0f); 
+    TFT_WriteCmd(0xd0); 
+    TFT_WriteData(0xa4); 
+    TFT_WriteData(0xa1); 
 
-	TFT_WriteCmd(0xC2); 
-	TFT_WriteData(0x0A); 
-	TFT_WriteData(0x00); 
-
-	TFT_WriteCmd(0xC3); 
-	TFT_WriteData(0x8A); 
-	TFT_WriteData(0x2A); 
-	TFT_WriteCmd(0xC4); 
-	TFT_WriteData(0x8A); 
-	TFT_WriteData(0xEE); 
-	
-	TFT_WriteCmd(0xC5); //VCOM 
-	TFT_WriteData(0x0E); 
-	
-	TFT_WriteCmd(0x36); 	//MX, MY, RGB mode 
-	TFT_WriteData(TFT_ROTATION);	//YXV0 0000 翻转 前两位分别是Y X
-							//第三位V是XY控制交换
-
-	//ST7735R Gamma Sequence
-	TFT_WriteCmd(0xe0); 	//Gamma (‘+’polarity) Correction Characteristics Setting
-	TFT_WriteData(0x0f); 	//伽马（正极性）
-	TFT_WriteData(0x1a); 
-	TFT_WriteData(0x0f); 
-	TFT_WriteData(0x18); 
-	TFT_WriteData(0x2f); 
-	TFT_WriteData(0x28); 
-	TFT_WriteData(0x20); 
-	TFT_WriteData(0x22); 
-	TFT_WriteData(0x1f); 
-	TFT_WriteData(0x1b); 
-	TFT_WriteData(0x23); 
-	TFT_WriteData(0x37); 
-	TFT_WriteData(0x00); 	
-	TFT_WriteData(0x07); 
-	TFT_WriteData(0x02); 
-	TFT_WriteData(0x10); 
-
-	TFT_WriteCmd(0xe1); 	//伽马（负极性）
-	TFT_WriteData(0x0f); 
-	TFT_WriteData(0x1b); 
-	TFT_WriteData(0x0f); 
-	TFT_WriteData(0x17); 
-	TFT_WriteData(0x33); 
-	TFT_WriteData(0x2c); 
-	TFT_WriteData(0x29); 
-	TFT_WriteData(0x2e); 
-	TFT_WriteData(0x30); 
-	TFT_WriteData(0x30); 
-	TFT_WriteData(0x39); 
-	TFT_WriteData(0x3f); 
-	TFT_WriteData(0x00); 
-	TFT_WriteData(0x07); 
-	TFT_WriteData(0x03); 
-	TFT_WriteData(0x10);  
-	
-	TFT_WriteCmd(0x2a);		//Column Address Set (CASET)
-	TFT_WriteData(0x00);	//横向范围设置
-	TFT_WriteData(0x00);	//起始位置低位 0
-	TFT_WriteData(0x00);
-	TFT_WriteData(0x7f);	//终止位置低位 127
-
-	TFT_WriteCmd(0x2b);		//Row Address Set (RASET)
-	TFT_WriteData(0x00);	//纵向范围设置
-	TFT_WriteData(0x00);	//起始位置低位 0
-	TFT_WriteData(0x00);
-	TFT_WriteData(0x9f);	//终止位置低位 159
-	
-	TFT_WriteCmd(0xF0); //Enable test command  
-	TFT_WriteData(0x01); 
-	TFT_WriteCmd(0xF6); //Disable ram power save mode 
-	TFT_WriteData(0x00); 
-	
-	TFT_WriteCmd(0x3A); //65k mode 
-	TFT_WriteData(0x05); //RGB565
-	
-	
-	TFT_WriteCmd(0x29);//Display on 29h打开显示 28h关闭显示
+    TFT_WriteCmd(0xe0); 
+    TFT_WriteData(0xd0); 
+    TFT_WriteData(0x00); 
+    TFT_WriteData(0x05); 
+    TFT_WriteData(0x0e); 
+    TFT_WriteData(0x15); 
+    TFT_WriteData(0x0d); 
+    TFT_WriteData(0x37); 
+    TFT_WriteData(0x43); 
+    TFT_WriteData(0x47); 
+    TFT_WriteData(0x09); 
+    TFT_WriteData(0x15); 
+    TFT_WriteData(0x12); 
+    TFT_WriteData(0x16); 
+    TFT_WriteData(0x19); 
+    TFT_WriteCmd(0xe1); 
+    TFT_WriteData(0xd0); 
+    TFT_WriteData(0x00); 
+    TFT_WriteData(0x05); 
+    TFT_WriteData(0x0d); 
+    TFT_WriteData(0x0c); 
+    TFT_WriteData(0x06); 
+    TFT_WriteData(0x2d); 
+    TFT_WriteData(0x44); 
+    TFT_WriteData(0x40); 
+    TFT_WriteData(0x0e); 
+    TFT_WriteData(0x1c); 
+    TFT_WriteData(0x18); 
+    TFT_WriteData(0x16); 
+    TFT_WriteData(0x19); 
+    TFT_WriteCmd(0xe7); 
+    TFT_WriteData(0x10);
+    TFT_WriteCmd(0x29); //display on
 }
 
 

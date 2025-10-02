@@ -8,7 +8,7 @@
 /*  外设库  */
 #include "U_USART.h"
 #include "ov7670.h"
-#include "TFT_ST7735.h"
+#include "TFT_ST7789V.h"
 /*  FATFS  */
 #include "ff.h"
 
@@ -47,8 +47,8 @@ void Task_Camera(void* pvParameters)
 		TFT_SPI_Send(gImage_a[i]);
 	}
 	TFT_SPI_Stop();
-	TFT_SetRotation(0xC0);
-	vTaskDelay(1500);
+	TFT_SetRotation(0x60);
+	vTaskDelay(500);
 	//屏幕刷新
 	while(1)
 	{
@@ -56,8 +56,12 @@ void Task_Camera(void* pvParameters)
 		//采集数据
 		OV_GetPixels();
 		//屏幕显示
-		TFT_SetCursor(0,0,131,162);
-		TFT_SPI_DMA(131*162*2);
+		TFT_SetCursor(10,17,300,103);
+		TFT_SPI_SetAddr(&camera_data[0]);
+		TFT_SPI_DMA(300*103*2);
+		TFT_SetCursor(10,120,300,103);
+		TFT_SPI_SetAddr(&camera_data[300*103*2]);
+		TFT_SPI_DMA(300*103*2);
 	}
 }
 

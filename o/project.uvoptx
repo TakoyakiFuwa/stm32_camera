@@ -1886,32 +1886,32 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\tft\TFT_ST7735.c</PathWithFileName>
-      <FilenameWithoutPath>TFT_ST7735.c</FilenameWithoutPath>
+      <PathWithFileName>..\tft\font.c</PathWithFileName>
+      <FilenameWithoutPath>font.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
     <File>
       <GroupNumber>7</GroupNumber>
       <FileNumber>139</FileNumber>
-      <FileType>5</FileType>
+      <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\tft\TFT_ST7735.h</PathWithFileName>
-      <FilenameWithoutPath>TFT_ST7735.h</FilenameWithoutPath>
+      <PathWithFileName>..\tft\TFT_ST7789V.c</PathWithFileName>
+      <FilenameWithoutPath>TFT_ST7789V.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
     <File>
       <GroupNumber>7</GroupNumber>
       <FileNumber>140</FileNumber>
-      <FileType>1</FileType>
+      <FileType>5</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\tft\font.c</PathWithFileName>
-      <FilenameWithoutPath>font.c</FilenameWithoutPath>
+      <PathWithFileName>..\tft\TFT_ST7789V.h</PathWithFileName>
+      <FilenameWithoutPath>TFT_ST7789V.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>

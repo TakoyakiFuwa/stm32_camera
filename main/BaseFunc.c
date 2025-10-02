@@ -17,9 +17,9 @@
  */
 
 /*  指示灯  */
-#define BF_LED_R	RCC_AHB1Periph_GPIOE
-#define BF_LED_G	GPIOE
-#define BF_LED_P	GPIO_Pin_8
+#define BF_LED_R	RCC_AHB1Periph_GPIOB
+#define BF_LED_G	GPIOB
+#define BF_LED_P	GPIO_Pin_10
 /*  看门狗时间  */
 uint16_t wdg_ms = 3000;
 
@@ -46,7 +46,7 @@ void BF_Start(void)
 	xTaskCreate(BF_Task_LED,"BF_LED",32,NULL,6,&BF_TASK_LED_Handler);
 		//命令行
 	TaskHandle_t BF_TASK_CLI_Handler;
-	xTaskCreate(BF_Task_CLI,"BF_CLI",128,NULL,10,&BF_TASK_CLI_Handler);
+	xTaskCreate(BF_Task_CLI,"BF_CLI",64,NULL,5,&BF_TASK_CLI_Handler);
 	//退出临界区
 	taskEXIT_CRITICAL();
 }
