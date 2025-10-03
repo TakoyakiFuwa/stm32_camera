@@ -44,7 +44,7 @@
  */
 //输出尺寸
 #define OV_Output_width 	300		//最高好像是314 且会有黑边
-#define OV_Output_height	206		//最高248 达到240标准
+#define OV_Output_height	204		//最高248 达到240标准
 //数据存放地址
 extern uint8_t camera_data[];
 //SCL

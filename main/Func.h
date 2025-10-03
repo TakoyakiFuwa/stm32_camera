@@ -6,6 +6,9 @@
 
 void Init_Func(void);
 void Task_Func(void* pvParameters);
+void Init_Light(void);
+void Init_Button(void);
+void Task_Button(void* pvParameters);
 void Cmd_Func(void);
 void Task_Camera(void* pvParameters);
 

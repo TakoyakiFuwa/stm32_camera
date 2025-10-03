@@ -1115,6 +1115,16 @@
               <FileType>5</FileType>
               <FilePath>..\tft\TFT_ST7789V.h</FilePath>
             </File>
+            <File>
+              <FileName>bmp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\tft\bmp.c</FilePath>
+            </File>
+            <File>
+              <FileName>bmp.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\tft\bmp.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

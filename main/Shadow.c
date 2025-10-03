@@ -12,6 +12,7 @@
 #include "U_USART.h"
 #include "TFT_ST7789V.h"
 #include "ov7670.h"
+#include "bmp.h"
 
 /*	希望我这次重新写模板可以用的久一点...
  *	想开始做一些很有趣的项目....
@@ -19,7 +20,7 @@
  *		——2025/5/20-14:41
  */
 
-uint8_t camera_data[300*206*2];
+uint8_t camera_data[300*204*2];
 /**@brief  用于main中的接口
   */
 void Main_Start(void* pvParameters)
@@ -31,6 +32,10 @@ void Main_Start(void* pvParameters)
 	Init_TFT((uint8_t*)&camera_data[0]);	
 	Init_OV((uint32_t*)&camera_data[0]);
 	camera_data[0] = 0;
+	Init_BMP();
+		//按键/补光灯内容
+	Init_Light();
+	Init_Button();
 	
 	//线程	 建议格式:Task_XXX()
 		//进入临界区
@@ -39,6 +44,7 @@ void Main_Start(void* pvParameters)
 //	TaskHandle_t TASK_FUNC_Handler;
 //	xTaskCreate(Task_Func,"Func",64,NULL,1,&TASK_FUNC_Handler);
 	xTaskCreate(Task_Camera,"Camera",128,NULL,8,NULL);
+	xTaskCreate(Task_Button,"Button",32,NULL,5,NULL);
 	
 		//退出临界区
 	taskEXIT_CRITICAL();	
@@ -64,7 +70,10 @@ int8_t Cmd(void)
 	{
 		Cmd_Func();
 	}
-		
+	else if(Command("BMP"))
+	{
+		Cmd_BMP();
+	}
 	
 	//CLI :>
 	else if(Command("HELP"))
