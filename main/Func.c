@@ -120,17 +120,18 @@ void Task_Camera(void* pvParameters)
 		vTaskDelay(1);
 		if(!camera_on)
 		{
+			vTaskDelay(10);
 			continue;
 		}
 		//采集数据
 		OV_GetPixels();
 		//屏幕显示
-		TFT_SetCursor(10,18,300,102);
+		TFT_SetCursor(10,20,300,100);
 		TFT_SPI_SetAddr(&camera_data[0]);
-		TFT_SPI_DMA(300*102*2);
-		TFT_SetCursor(10,120,300,102);
-		TFT_SPI_SetAddr(&camera_data[300*102*2]);
-		TFT_SPI_DMA(300*102*2);
+		TFT_SPI_DMA(300*100*2);
+		TFT_SetCursor(10,120,300,100);
+		TFT_SPI_SetAddr(&camera_data[300*100*2]);
+		TFT_SPI_DMA(300*100*2);
 	}
 }
 

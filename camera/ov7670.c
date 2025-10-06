@@ -44,7 +44,7 @@
  */
 //输出尺寸
 #define OV_Output_width 	300		//最高好像是314 且会有黑边
-#define OV_Output_height	204		//最高248 达到240标准
+#define OV_Output_height	200		//最高248 达到240标准
 //数据存放地址
 extern uint8_t camera_data[];
 //SCL
@@ -351,8 +351,8 @@ void Init_OV(uint32_t* data_addr)
 inline void OV_GetPixels(void)
 {	
 	DMA_SetCurrDataCounter(DMA2_Stream1,OV_Output_height*OV_Output_width/2);
-	DCMI_CaptureCmd(ENABLE);
 	DMA_Cmd(DMA2_Stream1,ENABLE);
+	DCMI_CaptureCmd(ENABLE);
 	while(DMA_GetFlagStatus(DMA2_Stream1,DMA_FLAG_TCIF1)!=SET);
 	DCMI_CaptureCmd(DISABLE);
 	DMA_ClearFlag(DMA2_Stream1,DMA_FLAG_TCIF1);

@@ -20,7 +20,7 @@
  *		——2025/5/20-14:41
  */
 
-uint8_t camera_data[300*204*2];
+uint8_t camera_data[300*200*2];
 /**@brief  用于main中的接口
   */
 void Main_Start(void* pvParameters)
@@ -56,6 +56,7 @@ void Main_Start(void* pvParameters)
 /**@brief  命令行创建接口
   *@param  1有匹配 0没匹配转到BaseFunc
   */
+extern int8_t camera_on ;
 int8_t Cmd(void)
 {
 	//COMMAND
@@ -72,7 +73,15 @@ int8_t Cmd(void)
 	}
 	else if(Command("BMP"))
 	{
+		camera_on = 0;
 		Cmd_BMP();
+	}
+	else if(Command("SNAP"))
+	{
+		camera_on = 0;
+		U_Printf("尝试写入(?) \r\n");
+		BMP_Write_ByData("aaa",(uint16_t*)&camera_data[1],300,200);
+		camera_on = 1;
 	}
 	
 	//CLI :>
