@@ -19,8 +19,8 @@
  *	以及...很想mo....
  *		——2025/5/20-14:41
  */
-
 uint8_t camera_data[300*200*2];
+uint16_t pic_index = 0;
 /**@brief  用于main中的接口
   */
 void Main_Start(void* pvParameters)
@@ -75,13 +75,35 @@ int8_t Cmd(void)
 	{
 		camera_on = 0;
 		Cmd_BMP();
+		camera_on = 1;
 	}
 	else if(Command("SNAP"))
 	{
 		camera_on = 0;
 		U_Printf("尝试写入(?) \r\n");
 		BMP_Write_ByData("aaa",(uint16_t*)&camera_data[1],300,200);
+		Cmd_BMP();
+//		camera_on = 1;
+	}
+	else if(Command("FAST_W"))
+	{
+		camera_on = 0;
+		U_Printf("快速读写测试 \r\n");
+		BMP_Fast_Write("fast",(uint16_t*)&camera_data[0],300*200);
 		camera_on = 1;
+	}
+	else if(Command("FAST_R"))
+	{
+		camera_on = 0;
+		U_Printf("快速读测试 \r\n");
+		BMP_Fast_Read("fast",(uint16_t*)&camera_data[0],300*200);
+		//屏幕显示
+		TFT_SetCursor(0,0,300,100);
+		TFT_SPI_SetAddr(&camera_data[0]);
+		TFT_SPI_DMA(300*100*2);
+		TFT_SetCursor(0,100,300,100);
+		TFT_SPI_SetAddr(&camera_data[300*100*2]);
+		TFT_SPI_DMA(300*100*2);
 	}
 	
 	//CLI :>

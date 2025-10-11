@@ -21,8 +21,10 @@
  *		——2025/10/6.19:41-秦羽
  */
 
+const char BMP_PATH_bmp[] 	= {"0:/cmr/"};
+const char BMP_PATH_fast[] 	= {"0:/cmr/F"};
+
 FATFS fs;
-const char SD_PATH[] = {"0:/cmr/"};
 typedef struct{
 	uint16_t bmp_sign;		//00 文件标识
 	uint32_t file_size;		//02 用字节表示文件大小
@@ -53,9 +55,9 @@ void Init_BMP(void)
 		U_Printf("SD卡初始化异常,代码:%d \r\n",f_mount(&fs,"0:",1));
 		return;
 	}
-	else if(f_opendir(&dp,SD_PATH)!=FR_OK)
+	else if(f_opendir(&dp,BMP_PATH_bmp)!=FR_OK)
 	{
-		U_Printf("未检测到文件夹[%s]位置,请创建文件夹后重试 \r\n",&SD_PATH[3]);
+		U_Printf("未检测到文件夹[%s]位置,请创建文件夹后重试 \r\n",&BMP_PATH_bmp[3]);
 		return;
 	}
 	else
@@ -67,9 +69,10 @@ void Init_BMP(void)
 /**@brief  添加路径前缀
   *@param  front 	路径前缀
   *@param  path		路径位置，调用之后会在path前添加前缀
+  *@param  back		路径后缀
   *@retval void
-  **/
-void BMP_PathAdd_Front(const char* front,uint8_t* path)
+  */
+void BMP_Path(const char* front,uint8_t* path,const char* back)
 {
 	uint8_t index = 0;
 	uint8_t temp_path[30];
@@ -79,7 +82,7 @@ void BMP_PathAdd_Front(const char* front,uint8_t* path)
 		temp_path[index]=path[index];
 	}
 	temp_path[index]=path[index];
-	//找到
+	//添加前缀
 	for(index=0;front[index]!=0;index++)
 	{
 		path[index] = front[index];
@@ -88,17 +91,7 @@ void BMP_PathAdd_Front(const char* front,uint8_t* path)
 	{
 		path[index++] = temp_path[i];
 	}
-	path[index] = '\0';
-}
-/**@brief  添加路径后缀
-  *@param  back 	路径后缀
-  *@param  path		路径位置，调用之后会在path前添加后缀
-  *@retval void
-  **/
-void BMP_PathAdd_Back(uint8_t* path,const char* back)
-{
-	uint8_t index = 0;
-	for(;path[index]!='\0';index++);
+	//添加后缀
 	for(int i=0;back[i]!='\0';i++)
 	{
 		path[index++] = back[i];
@@ -110,18 +103,43 @@ void BMP_PathAdd_Back(uint8_t* path,const char* back)
   *@retval uint16_t 读取到的数字
   *@add	   会自动找到要读取的数字位置，不过只能读一个...
   */
-uint16_t BMP_PathRead_Num(const char* path)
+uint16_t BMP_StringToNum(const char* str)
 {
 	uint16_t num = 0;
 	uint8_t i=0;
-	for(;(path[i]<'0'||path[i]>'9')&&i<100;i++);
-	while(path[i]>='0'&&path[i]<='9')
+	for(;(str[i]<'0'||str[i]>'9')&&i<100;i++);
+	while(str[i]>='0'&&str[i]<='9')
 	{
 		num*=10;
-		num+=(path[i]-'0');
+		num+=(str[i]-'0');
 		i++;
 	}
 	return num;
+}
+/**@brief  数字转字符串
+  *@param  num
+  *
+  */
+void BMP_NumToString(uint16_t num,char* str)
+{
+	if(num==0)
+	{
+		str[0] = '0';
+		str[1] = '\0';
+		return;
+	}
+	uint32_t num_length = 1;
+	//测量数字位数
+	for(;num_length<=num;num_length*=10);
+	//从高位开始发送
+	uint8_t index = 0;
+	for(num_length/=10;num_length>=1;num_length/=10)
+	{
+		str[index++] = ( num/num_length +'0');
+		//减去最高位
+		num -= (num - (num%num_length));
+	}
+	str[index] = '\0';
 }
 /**@brief  打印文件头信息
   *@param  bmp_infor 要打印的文件信息
@@ -194,8 +212,7 @@ static int8_t BMP_Read_ForeProcess(const char* file_name,FIL* fp,uint32_t* width
 		path[i] = file_name[i];
 		path[i+1] = '\0';
 	}
-	BMP_PathAdd_Front(SD_PATH,path);
-	BMP_PathAdd_Back(path,".bmp");
+	BMP_Path(BMP_PATH_bmp,path,".bmp");
 	//打开文件
 	if(f_open(fp,(const TCHAR*)path,FA_READ)!=FR_OK)
 	{
@@ -280,7 +297,7 @@ void BMP_Read_ByFunc(const char* file_name,void(*Func)(uint16_t))
   *@add	   文件头只是适配....
   *		   在f429板子上的相机项目(即320*240-qvga)尺寸的bmp
   */
-int8_t BMP_Write_ForeProcess(const char* file_name,FIL* fp,uint16_t width,uint16_t height)
+static int8_t BMP_Write_ForeProcess(const char* file_name,FIL* fp,uint16_t width,uint16_t height)
 {
 	//路径处理
 	uint8_t path[50];
@@ -289,8 +306,7 @@ int8_t BMP_Write_ForeProcess(const char* file_name,FIL* fp,uint16_t width,uint16
 		path[i] = file_name[i];
 		path[i+1] = '\0';
 	}
-	BMP_PathAdd_Front(SD_PATH,path);
-	BMP_PathAdd_Back(path,".bmp");
+	BMP_Path(BMP_PATH_bmp,path,".bmp");
 	//打开文件
 	if(f_open(fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE)!=FR_OK)
 	{
@@ -347,6 +363,12 @@ int8_t BMP_Write_ForeProcess(const char* file_name,FIL* fp,uint16_t width,uint16
 	f_lseek(fp,0x8A);
 	return 1;
 }
+/**@brief  把数据写入BMP
+  *@param  file_name	创建的文件名(不含前后缀)
+  *@param  data			写入的数据(rgb565)
+  *@param  width*height	尺寸(像素)
+  *@retval void
+  */
 void BMP_Write_ByData(const char* file_name,uint16_t* data,uint16_t width,uint16_t height)
 {
 	FIL fp;
@@ -362,30 +384,112 @@ void BMP_Write_ByData(const char* file_name,uint16_t* data,uint16_t width,uint16
 		//rgb565  ---- ---- rrrr rggg gggb bbbb
 		//rgb888  rrrr r--- gggg gg-- bbbb b---
 		rgb888[0] = ((rgb565&0xF800)>>8);
-		f_write(&fp,&rgb888[0],sizeof(uint8_t),0);
-		rgb888[0] = ((rgb565&0x7E0)>>3);
-		f_write(&fp,&rgb888[0],sizeof(uint8_t),0);
-		rgb888[0] = ((rgb565&0x1F)<<3);
-		f_write(&fp,&rgb888[0],sizeof(uint8_t),0);
+		rgb888[1] = ((rgb565&0x7E0)>>3);
+		rgb888[2] = ((rgb565&0x1F)<<3);
+		f_write(&fp,rgb888,sizeof(uint8_t)*3,0);
 	}
 	//关闭文件
 	f_close(&fp);
 	U_Printf("bmp.c[BMP_Write_ByData]:写入[%s]完成 \r\n",file_name);
 }
+/**@brief  不管BMP格式，直接写入
+  *@param  file_name  	文件名
+  *@param  data			写入的数据
+  *@param  length		写入的数据长度(单位是uint16_t)
+  *@retval void
+  */
+void BMP_Fast_Write(const char* file_name,uint16_t* data,uint16_t length)
+{
+	//路径处理
+	uint8_t path[50];
+	int i=0;
+	for(;file_name[i]!='\0';i++)
+	{
+		path[i] = file_name[i];
+	}
+	path[i] = '\0';
+	BMP_Path(BMP_PATH_fast,path,".qy");
+	//创建文件
+	FIL fp;
+	if(f_open(&fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE)!=FR_OK)
+	{
+		U_Printf("BMP_Fast_Write创建文件[%s]异常:%d \r\n",path,f_open(&fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE));
+		return;
+	}
+	//写入文件
+	length/=2;
+	f_write(&fp,(const void*)data,sizeof(uint16_t)*length,0);
+	f_write(&fp,(const void*)&data[length],sizeof(uint16_t)*length,0);
+	//关闭文件
+	f_close(&fp);
+	U_Printf("bmp.c[BMP_Fast_Write]:写入[%s]完成 \r\n",file_name);
+}
+/**@brief  不管BMP格式，直接读取
+  *@param  file_name  	文件名
+  *@param  data			读取的数据
+  *@param  length		读出的数据长度(单位是uint16_t)
+  *@retval void
+  */
+void BMP_Fast_Read(const char* file_name,uint16_t* data,uint16_t length)
+{
+	//路径处理
+	uint8_t path[50];
+	int i=0;
+	for(;file_name[i]!='\0';i++)
+	{
+		path[i] = file_name[i];
+	}
+	path[i] = '\0';
+	BMP_Path(BMP_PATH_fast,path,".qy");
+	//创建文件
+	FIL fp;
+	if(f_open(&fp,(const TCHAR*)path,FA_READ)!=FR_OK)
+	{
+		U_Printf("BMP_Fast_Read创建文件[%s]异常:%d \r\n",path,f_open(&fp,(const TCHAR*)path,FA_READ));
+		return;
+	}
+	//读取文件
+	length/=2;
+	f_read(&fp,(void*)data,sizeof(uint16_t)*length,0);
+	f_read(&fp,(void*)&data[length],sizeof(uint16_t)*length,0);
+	//关闭文件
+	f_close(&fp);
+}
 #include "TFT_ST7789V.h"
 void Cmd_BMP(void)
 {	
-	TFT_SetCursor(0,0,300,200);
-	BMP_ReadInfor("0:/cmr/aaa.bmp");
-	TFT_SPI_Start();
-	BMP_Read_ByFunc("aaa",TFT_Write16Data);
-	TFT_SPI_Stop();
+	FIL fp;
+	TCHAR path[50] = "index";
+	BMP_Path(BMP_PATH_bmp,(uint8_t*)path,".qy");
+	if(f_open(&fp,path,FA_OPEN_APPEND|FA_WRITE)!=FR_OK)
+	{
+		U_Printf("文件追加打开失败，尝试创建 \r\n");
+		if(f_open(&fp,path,FA_CREATE_NEW|FA_WRITE)!=FR_OK)
+		{
+			U_Printf("文件追加[%s]打开失败:%d \r\n",path,f_open(&fp,path,FA_OPEN_APPEND));
+			return;
+		}
+	}
+	static uint16_t test_num = 1213;
+	test_num++;
+	f_write(&fp,(const void*)&test_num,sizeof(uint16_t),0);
+	f_close(&fp);
 	
-//	TFT_SetCursor(0,0,320,240);
-//	TFT_SPI_Start();
-//	BMP_Read_ByFunc("ciallo_qvga",TFT_Write16Data);
-//	TFT_SPI_Stop();
-//	BMP_ReadInfor("0:/cmr/ciallo_qvga.bmp");
+	U_Printf("写入完成，当前文件内容: \r\n");
+	uint8_t sign = 1;
+	uint16_t num = 0;
+	if(f_open(&fp,path,FA_READ)!=FR_OK)
+	{
+		U_Printf("打开[%s]失败:%d \r\n",path,f_open(&fp,path,FA_READ));
+		return;
+	}
+	f_read(&fp,(void*)&num,sizeof(uint16_t),(UINT*)&sign);
+	while(sign!=0)
+	{
+		U_Printf("---%d [%d] \r\n",num,sign);
+		f_read(&fp,(void*)&num,sizeof(uint16_t),(UINT*)&sign);
+	}
+	f_close(&fp);
 	
 	U_Printf("这里是BMP的指令 \r\n");
 }
