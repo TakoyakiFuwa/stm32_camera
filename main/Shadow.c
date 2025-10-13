@@ -10,11 +10,17 @@
 #include "task.h"
 /*  外设库  */
 #include "U_USART.h"
+/*  屏幕库  */
 #include "TFT_ST7789V.h"
+/*  相机库  */
 #include "ov7670.h"
+/*  SD卡存储库  */
 #include "bmp.h"
 /*  宏定义库  */
 #include "cmr_def.h"
+/*  UI库  */
+#include "UI_Core.h"
+#include "UI_Render.h"
 
 /*  项目中用到的全局变量  */
 uint8_t camera_data[DEF_PIC_HEIGHT*DEF_PIC_WIDTH*2];
@@ -33,29 +39,28 @@ void Main_Start(void* pvParameters)
 	//基本功能函数
 	BF_Start();
 	//初始化 建议格式:Init_XXX()
-	if(Init_BMP()!=0)
-	{
-		sign_SDONNNNNN = 0;
-	}
-	else
-	{
-		Init_Func();
-	}
-	Init_TFT((uint8_t*)&camera_data[0]);	
-	Init_OV((uint32_t*)&camera_data[0]);
+//	if(Init_BMP()!=0)
+//	{
+//		sign_SDONNNNNN = 0;
+//	}
+//	else
+//	{
+//		Init_Func();
+//	}
+	Init_TFT((uint8_t*)&camera_data[0]);
+	Init_UIR();
+//	Init_OV((uint32_t*)&camera_data[0]);
 	camera_data[0] = 0;
 		//按键/补光灯内容
-	Init_Light();
-	Init_Button();
+//	Init_Light();
+//	Init_Button();
 	
 	//线程	 建议格式:Task_XXX()
 		//进入临界区
 	taskENTER_CRITICAL();
 		//Func测试
-//	TaskHandle_t TASK_FUNC_Handler;
-//	xTaskCreate(Task_Func,"Func",64,NULL,1,&TASK_FUNC_Handler);
-	xTaskCreate(Task_Camera,"Camera",128,NULL,8,NULL);
-	xTaskCreate(Task_Button,"Button",256+128,NULL,5,NULL);
+//	xTaskCreate(Task_Camera,"Camera",128,NULL,8,NULL);
+//	xTaskCreate(Task_Button,"Button",256+128,NULL,5,NULL);
 	
 		//退出临界区
 	taskEXIT_CRITICAL();	
@@ -100,26 +105,47 @@ int8_t Cmd(void)
 	{
 		camera_on = 0;
 		U_Printf("快速读写测试 \r\n");
-		BMP_Fast_Write("fast",(uint16_t*)&camera_data[0],300*200);
+		SD_Fast_Write("fast",(uint16_t*)&camera_data[0],300*200);
 		camera_on = 1;
-	}
-	else if(Command("SD"))
-	{
-		SD_FindMaxNum();
 	}
 	else if(Command("FAST_R"))
 	{
 		camera_on = 0;
 		U_Printf("快速读测试 \r\n");
-		BMP_Fast_Read("fast",(uint16_t*)&camera_data[0],300*200);
+		SD_Fast_Read("fast",(uint16_t*)&camera_data[0],300*200);
 		//屏幕显示
 		TFT_SetCursor(0,0,300,100);
-		TFT_SPI_SetAddr(&camera_data[0]);
-		TFT_SPI_DMA(300*100*2);
+		TFT_DMA_SetAddr(&camera_data[0]);
+		TFT_DMA_Send(300*100*2);
 		TFT_SetCursor(0,100,300,100);
-		TFT_SPI_SetAddr(&camera_data[300*100*2]);
-		TFT_SPI_DMA(300*100*2);
+		TFT_DMA_SetAddr(&camera_data[300*100*2]);
+		TFT_DMA_Send(300*100*2);
 	}
+	else if(Command("a"))
+	{
+		U_Printf("a \r\n");
+	}
+	else if(Command("s"))
+	{
+		U_Printf("s \r\n");
+	}
+	else if(Command("d"))
+	{
+		U_Printf("d \r\n");
+	}
+	else if(Command("A"))
+	{
+		U_Printf("A! \r\n");
+	}
+	else if(Command("S"))
+	{
+		U_Printf("S! \r\n");
+	}
+	else if(Command("D"))
+	{
+		U_Printf("D! \r\n");
+	}
+	
 	
 	//CLI :>
 	else if(Command("HELP"))

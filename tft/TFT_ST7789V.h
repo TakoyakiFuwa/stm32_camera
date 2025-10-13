@@ -8,8 +8,9 @@ uint16_t TFT_RGB888To565(uint32_t RGB_888);
 void TFT_SPI_Start(void);
 void TFT_SPI_Stop(void);
 void TFT_SPI_Send(uint8_t byte);
-void TFT_SPI_DMA(uint16_t counts);
-void TFT_SPI_SetAddr(uint8_t* addr);
+//DMA传输
+void TFT_DMA_Send(uint16_t counts);
+void TFT_DMA_SetAddr(uint8_t* addr);
 //主要的接口
 void Init_TFT(uint8_t* data_addr);
 void TFT_SetCursor(uint16_t x,uint16_t y,uint16_t width,uint16_t height);

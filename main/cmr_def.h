@@ -11,6 +11,8 @@
 /*  宽度/高度  */
 #define DEF_PIC_WIDTH	234
 #define DEF_PIC_HEIGHT	240		//建议是3的倍数，参考Task_Camera->屏幕显示部分
+/*  屏幕旋转配置  */
+#define DEF_TFT_ROTA 	0x60	//YXV0 0000
 /*  屏幕位置  */
 #define DEF_TFT_DX		70		//参考TFT_SetCursor(DET_TFT_DX,DEF_TFT_DY,DEF_PIC_WIDTH,DEF_PIC_HEIGHT);
 #define DEF_TFT_DY		0

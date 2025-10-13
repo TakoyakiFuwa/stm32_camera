@@ -30,7 +30,9 @@
  *	PB14	(11)	-> VCC
  *	PB12	(12)	-> CS
  */
-#define TFT_ROTATION 0x60	//YXV0 0000
+/*  见cmr_def.h  */
+#include "cmr_def.h"
+//#define TFT_ROTATION 0x60	//YXV0 0000
 /*	方向为: （适合f4_ui的OV7670方向输出）
  *		+-——-——-——-——>
  *		|			 x	
@@ -213,7 +215,7 @@ void TFT_SPI_Send(uint8_t byte)
   *@param  counts 要发送的数据量(字节数)
   *@retval void
   */
-inline void TFT_SPI_DMA(uint16_t counts)
+inline void TFT_DMA_Send(uint16_t counts)
 {
 	DMA_SetCurrDataCounter(DMA1_Stream4,counts);
 	TFT_SPI_Start();
@@ -226,7 +228,7 @@ inline void TFT_SPI_DMA(uint16_t counts)
   *@param  addr 要设置的地址
   *@retval void
   */
-inline void TFT_SPI_SetAddr(uint8_t* addr)
+inline void TFT_DMA_SetAddr(uint8_t* addr)
 {
 	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)addr;
 	DMA_Init(DMA1_Stream4,&DMA_InitStruct);
@@ -332,7 +334,7 @@ static void TFT_SoftwareInit(void)
     vTaskDelay(120);         //Delay 120ms 
 
     TFT_WriteCmd(0x36); 
-    TFT_WriteData(TFT_ROTATION); //a0：横屏，00:竖屏，60：横屏镜像
+    TFT_WriteData(DEF_TFT_ROTA); //a0：横屏，00:竖屏，60：横屏镜像
     TFT_WriteCmd(0x3a); 
     TFT_WriteData(0x05); 
 

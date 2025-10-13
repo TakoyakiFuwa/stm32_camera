@@ -341,7 +341,7 @@
               <MiscControls>--diag-suppress=870</MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F40_41xxx</Define>
               <Undefine></Undefine>
-              <IncludePath>..\st_core;..\st_lib;..\os_src;..\main;..\library;..\o;..\fatfs;..\tft;..\camera</IncludePath>
+              <IncludePath>..\st_core;..\st_lib;..\os_src;..\main;..\library;..\o;..\fatfs;..\tft;..\camera;..\ui</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1144,6 +1144,41 @@
               <FileName>ov7670.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\camera\ov7670.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>ui</GroupName>
+          <Files>
+            <File>
+              <FileName>UI_Core.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ui\UI_Core.c</FilePath>
+            </File>
+            <File>
+              <FileName>UI_Core.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\ui\UI_Core.h</FilePath>
+            </File>
+            <File>
+              <FileName>UI_Instance.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ui\UI_Instance.c</FilePath>
+            </File>
+            <File>
+              <FileName>UI_Instance.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\ui\UI_Instance.h</FilePath>
+            </File>
+            <File>
+              <FileName>UI_Render.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ui\UI_Render.c</FilePath>
+            </File>
+            <File>
+              <FileName>UI_Render.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\ui\UI_Render.h</FilePath>
             </File>
           </Files>
         </Group>

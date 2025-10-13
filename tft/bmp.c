@@ -203,7 +203,7 @@ bmp_head BMP_ReadInfor(const char* path)
   *@param  data_offset	图像像素开始位置
   *@retval int8_t 		1正常读取/0文件打开失败
   */
-static int8_t BMP_Read_ForeProcess(const char* file_name,FIL* fp,uint32_t* width,uint32_t* height,uint32_t* data_offset)
+static int8_t BMP_Read_ForeProcess(const char* file_name,FIL* fp,uint16_t* width,uint16_t* height,uint32_t* data_offset)
 {
 	//路径处理
 	uint8_t path[50];
@@ -234,12 +234,12 @@ static int8_t BMP_Read_ForeProcess(const char* file_name,FIL* fp,uint32_t* width
   *@param  max_length	data能承受的最大rgb565像素数量
   *@retval void
   */
-void BMP_Read_ByData(const char* file_name,uint16_t* data,uint32_t max_length)
+void BMP_Read_ByData(const char* file_name,uint16_t* data,uint16_t* width,uint16_t* height,uint32_t max_length)
 {
 	FIL fp;
-	uint32_t data_offset,width,height;
+	uint32_t data_offset;
 	//预处理
-	if(BMP_Read_ForeProcess(file_name,&fp,&width,&height,&data_offset)==0)
+	if(BMP_Read_ForeProcess(file_name,&fp,width,height,&data_offset)==0)
 	{//处理异常
 		return;
 	}
@@ -247,7 +247,8 @@ void BMP_Read_ByData(const char* file_name,uint16_t* data,uint32_t max_length)
 	f_lseek(&fp,data_offset);
 	uint32_t rgb888;
 	uint16_t rgb565;
-	uint32_t circle_count = (max_length>width*height?width*height:max_length);
+	uint32_t size = (*width)*(*height);
+	uint32_t circle_count = (max_length>size?size:max_length);
 	for(uint32_t i=0;i<circle_count;i++)
 	{
 		//rgb565  ---- ---- rrrr rggg gggb bbbb
@@ -261,37 +262,37 @@ void BMP_Read_ByData(const char* file_name,uint16_t* data,uint32_t max_length)
 	//关闭文件
 	f_close(&fp);
 }
-/**@brief  通过函数处理数据
-  *@param  file_name	仅名字，不需要前缀和尾缀
-  *@param  void(*Func)(uint16_t)	rgb565像素处理函数,uint16_t->rgb565像素
-  *@retval void
-  */
-void BMP_Read_ByFunc(const char* file_name,void(*Func)(uint16_t))
-{
-	FIL fp;
-	uint32_t data_offset,width,height;
-	//预处理
-	if(BMP_Read_ForeProcess(file_name,&fp,&width,&height,&data_offset)==0)
-	{//处理异常
-		return;
-	}
-	//获取数据
-	f_lseek(&fp,data_offset);
-	uint32_t rgb888;
-	uint16_t rgb565;
-	for(uint32_t i=0;i<width*height;i++)
-	{
-		//rgb565  ---- ---- rrrr rggg gggb bbbb
-		//rgb888  rrrr r--- gggg gg-- bbbb b---
-		f_read(&fp,(void*)&rgb888,sizeof(uint8_t)*3,0);
-		rgb565 = ((rgb888&0xF80000)>>8);
-		rgb565 |= ((rgb888&0xFC00)>>5);
-		rgb565 |= ((rgb888&0xF8)>>3);
-		Func(rgb565);
-	}
-	//关闭文件
-	f_close(&fp);
-}
+///**@brief  通过函数处理数据
+//  *@param  file_name	仅名字，不需要前缀和尾缀
+//  *@param  void(*Func)(uint16_t)	rgb565像素处理函数,uint16_t->rgb565像素
+//  *@retval void
+//  */
+//void BMP_Read_ByFunc(const char* file_name,void(*Func)(uint16_t))
+//{
+//	FIL fp;
+//	uint32_t data_offset,width,height;
+//	//预处理
+//	if(BMP_Read_ForeProcess(file_name,&fp,&width,&height,&data_offset)==0)
+//	{//处理异常
+//		return;
+//	}
+//	//获取数据
+//	f_lseek(&fp,data_offset);
+//	uint32_t rgb888;
+//	uint16_t rgb565;
+//	for(uint32_t i=0;i<width*height;i++)
+//	{
+//		//rgb565  ---- ---- rrrr rggg gggb bbbb
+//		//rgb888  rrrr r--- gggg gg-- bbbb b---
+//		f_read(&fp,(void*)&rgb888,sizeof(uint8_t)*3,0);
+//		rgb565 = ((rgb888&0xF80000)>>8);
+//		rgb565 |= ((rgb888&0xFC00)>>5);
+//		rgb565 |= ((rgb888&0xF8)>>3);
+//		Func(rgb565);
+//	}
+//	//关闭文件
+//	f_close(&fp);
+//}
 /**
   *@retval int8_t
   *@add	   文件头只是适配....
@@ -398,7 +399,7 @@ void BMP_Write_ByData(const char* file_name,uint16_t* data,uint16_t width,uint16
   *@param  length		写入的数据长度(单位是uint16_t)
   *@retval void
   */
-void BMP_Fast_Write(const char* file_name,uint16_t* data,uint32_t length)
+void SD_Fast_Write(const char* file_name,uint16_t* data,uint32_t length)
 {
 	//路径处理
 	uint8_t path[50];
@@ -413,7 +414,7 @@ void BMP_Fast_Write(const char* file_name,uint16_t* data,uint32_t length)
 	FIL fp;
 	if(f_open(&fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE)!=FR_OK)
 	{
-		U_Printf("BMP_Fast_Write创建文件[%s]异常:%d \r\n",path,f_open(&fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE));
+		U_Printf("SD_Fast_Write创建文件[%s]异常:%d \r\n",path,f_open(&fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE));
 		return;
 	}
 	//写入文件
@@ -422,7 +423,7 @@ void BMP_Fast_Write(const char* file_name,uint16_t* data,uint32_t length)
 	f_write(&fp,(const void*)&data[length],sizeof(uint16_t)*length,0);
 	//关闭文件
 	f_close(&fp);
-	U_Printf("bmp.c[BMP_Fast_Write]:写入[%s]完成 \r\n",file_name);
+	U_Printf("bmp.c[SD_Fast_Write]:写入[%s]完成 \r\n",file_name);
 }
 /**@brief  不管BMP格式，直接读取
   *@param  file_name  	文件名
@@ -430,7 +431,7 @@ void BMP_Fast_Write(const char* file_name,uint16_t* data,uint32_t length)
   *@param  length		读出的数据长度(单位是uint16_t)
   *@retval void
   */
-void BMP_Fast_Read(const char* file_name,uint16_t* data,uint32_t length)
+void SD_Fast_Read(const char* file_name,uint16_t* data,uint32_t length)
 {
 	//路径处理
 	uint8_t path[50];
@@ -445,7 +446,7 @@ void BMP_Fast_Read(const char* file_name,uint16_t* data,uint32_t length)
 	FIL fp;
 	if(f_open(&fp,(const TCHAR*)path,FA_READ)!=FR_OK)
 	{
-		U_Printf("BMP_Fast_Read创建文件[%s]异常:%d \r\n",path,f_open(&fp,(const TCHAR*)path,FA_READ));
+		U_Printf("SD_Fast_Read创建文件[%s]异常:%d \r\n",path,f_open(&fp,(const TCHAR*)path,FA_READ));
 		return;
 	}
 	//读取文件

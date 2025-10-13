@@ -41,14 +41,14 @@ void SD_KeepPhoto(void)
 {
 	uint8_t path_string[10];
 	BMP_NumToString(pic_index+1,(char*)path_string);
-	BMP_Fast_Write((const char*)path_string,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
+	SD_Fast_Write((const char*)path_string,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
 	pic_index++;
 }
 void SD_ReadPhoto(uint16_t index)
 {
 	uint8_t path_string[10];
 	BMP_NumToString(index,(char*)path_string);
-	BMP_Fast_Read((const char*)path_string,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
+	SD_Fast_Read((const char*)path_string,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
 	Func_TFT_Show();
 }
 const uint16_t d_height	 = DEF_PIC_HEIGHT/3;
@@ -56,14 +56,14 @@ const uint16_t DMA_COUNT = DEF_PIC_WIDTH*DEF_PIC_HEIGHT/3*2;
 inline void Func_TFT_Show(void)
 {
 	TFT_SetCursor(DEF_TFT_DX,DEF_TFT_DY,DEF_PIC_WIDTH,d_height);
-	TFT_SPI_SetAddr(&camera_data[0]);
-	TFT_SPI_DMA(DMA_COUNT);
+	TFT_DMA_SetAddr(&camera_data[0]);
+	TFT_DMA_Send(DMA_COUNT);
 	TFT_SetCursor(DEF_TFT_DX,DEF_TFT_DY+d_height,DEF_PIC_WIDTH,d_height);
-	TFT_SPI_SetAddr(&camera_data[DMA_COUNT]);
-	TFT_SPI_DMA(DMA_COUNT);
+	TFT_DMA_SetAddr(&camera_data[DMA_COUNT]);
+	TFT_DMA_Send(DMA_COUNT);
 	TFT_SetCursor(DEF_TFT_DX,DEF_TFT_DY+d_height*2,DEF_PIC_WIDTH,d_height);
-	TFT_SPI_SetAddr(&camera_data[DMA_COUNT*2]);
-	TFT_SPI_DMA(DMA_COUNT);
+	TFT_DMA_SetAddr(&camera_data[DMA_COUNT*2]);
+	TFT_DMA_Send(DMA_COUNT);
 }
 void Open_Photo_Count(void)
 {//把"相册"翻译成"Photo_Count"真是....hhh
