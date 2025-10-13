@@ -77,7 +77,7 @@
 #define configTICK_RATE_HZ			( ( TickType_t ) 1000 )
 #define configMAX_PRIORITIES		( 32 ) //可使用的最大优先级
 #define configMINIMAL_STACK_SIZE	( ( unsigned short ) 32 )   //是128字，并非字节 即128*4个字节，堆栈大小以字为单位
-#define configTOTAL_HEAP_SIZE		( ( size_t ) ( 7 * 1024 ) )
+#define configTOTAL_HEAP_SIZE		( ( size_t ) ( 10 * 1024 ) )
 #define configMAX_TASK_NAME_LEN		( 16 )
 #define configUSE_16_BIT_TICKS		0 //系统节拍计数器变量数据类型，1表示为16位无符号整形，0表示为32位无符号整形
 #define configIDLE_SHOULD_YIELD		1 //1:空闲任务放弃CPU使用权,给其他同优先级的用户任务  2:空闲优先级和其他优先级相同。避免2，多使用1

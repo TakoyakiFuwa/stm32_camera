@@ -22,7 +22,7 @@
  */
 
 const char BMP_PATH_bmp[] 	= {"0:/cmr/"};
-const char BMP_PATH_fast[] 	= {"0:/cmr/F"};
+const char BMP_PATH_fast[] 	= {"0:/f/f"};
 
 FATFS fs;
 typedef struct{
@@ -47,24 +47,24 @@ typedef struct{
   *@add    SD卡的驱动文件好像有没什么用的引脚初始化，应该把这个初始化放在前面...
   *		   避免SDIO改变其他引脚...
   */
-void Init_BMP(void)
+int8_t Init_BMP(void)
 {
 	DIR dp;
 	if(f_mount(&fs,"0:",1)!=FR_OK)
 	{
 		U_Printf("SD卡初始化异常,代码:%d \r\n",f_mount(&fs,"0:",1));
-		return;
+		return -1;
 	}
 	else if(f_opendir(&dp,BMP_PATH_bmp)!=FR_OK)
 	{
 		U_Printf("未检测到文件夹[%s]位置,请创建文件夹后重试 \r\n",&BMP_PATH_bmp[3]);
-		return;
 	}
 	else
 	{
 		f_closedir(&dp);
 		U_Printf("Init_BMP：正常挂载SD卡，初始化完成 \r\n");
 	}
+	return 0;
 }
 /**@brief  添加路径前缀
   *@param  front 	路径前缀
@@ -398,7 +398,7 @@ void BMP_Write_ByData(const char* file_name,uint16_t* data,uint16_t width,uint16
   *@param  length		写入的数据长度(单位是uint16_t)
   *@retval void
   */
-void BMP_Fast_Write(const char* file_name,uint16_t* data,uint16_t length)
+void BMP_Fast_Write(const char* file_name,uint16_t* data,uint32_t length)
 {
 	//路径处理
 	uint8_t path[50];
@@ -430,7 +430,7 @@ void BMP_Fast_Write(const char* file_name,uint16_t* data,uint16_t length)
   *@param  length		读出的数据长度(单位是uint16_t)
   *@retval void
   */
-void BMP_Fast_Read(const char* file_name,uint16_t* data,uint16_t length)
+void BMP_Fast_Read(const char* file_name,uint16_t* data,uint32_t length)
 {
 	//路径处理
 	uint8_t path[50];

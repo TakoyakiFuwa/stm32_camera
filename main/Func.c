@@ -9,14 +9,90 @@
 #include "U_USART.h"
 #include "ov7670.h"
 #include "TFT_ST7789V.h"
+#include "bmp.h"
 /*  FATFS  */
 #include "ff.h"
+/*  宏定义数据  */
+#include "cmr_def.h"
 
+extern uint16_t pic_index;
+extern uint8_t camera_data[];
+uint16_t	photo_index[234];
+int16_t 	photo_index_index = 0;
+int8_t 		camera_on = 1;
+void SD_FindMaxNum(void)
+{
+	DIR dp;
+	FILINFO info;
+	f_opendir(&dp,"0:/f");
+	f_readdir(&dp,&info);
+	pic_index = BMP_StringToNum(info.fname);
+	uint16_t temp_num = 0;
+	while(info.fname[0]!='\0')
+	{
+		f_readdir(&dp,&info);
+		temp_num = BMP_StringToNum(info.fname);
+		pic_index = pic_index>temp_num?pic_index:temp_num;
+	}
+	f_closedir(&dp);
+	U_Printf("SD_FindMaxNum(%s):%d \r\n","0:/f",pic_index);
+}
+void SD_KeepPhoto(void)
+{
+	uint8_t path_string[10];
+	BMP_NumToString(pic_index+1,(char*)path_string);
+	BMP_Fast_Write((const char*)path_string,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
+	pic_index++;
+}
+void SD_ReadPhoto(uint16_t index)
+{
+	uint8_t path_string[10];
+	BMP_NumToString(index,(char*)path_string);
+	BMP_Fast_Read((const char*)path_string,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
+	Func_TFT_Show();
+}
+const uint16_t d_height	 = DEF_PIC_HEIGHT/3;
+const uint16_t DMA_COUNT = DEF_PIC_WIDTH*DEF_PIC_HEIGHT/3*2;
+inline void Func_TFT_Show(void)
+{
+	TFT_SetCursor(DEF_TFT_DX,DEF_TFT_DY,DEF_PIC_WIDTH,d_height);
+	TFT_SPI_SetAddr(&camera_data[0]);
+	TFT_SPI_DMA(DMA_COUNT);
+	TFT_SetCursor(DEF_TFT_DX,DEF_TFT_DY+d_height,DEF_PIC_WIDTH,d_height);
+	TFT_SPI_SetAddr(&camera_data[DMA_COUNT]);
+	TFT_SPI_DMA(DMA_COUNT);
+	TFT_SetCursor(DEF_TFT_DX,DEF_TFT_DY+d_height*2,DEF_PIC_WIDTH,d_height);
+	TFT_SPI_SetAddr(&camera_data[DMA_COUNT*2]);
+	TFT_SPI_DMA(DMA_COUNT);
+}
+void Open_Photo_Count(void)
+{//把"相册"翻译成"Photo_Count"真是....hhh
+	//获取当前全部相片
+	DIR dp;
+	FILINFO info;
+	f_opendir(&dp,"0:/f");
+	f_readdir(&dp,&info);
+	photo_index[photo_index_index] = BMP_StringToNum(info.fname);
+	while(info.fname[0]!='\0')
+	{
+		f_readdir(&dp,&info);
+		photo_index[++photo_index_index] = BMP_StringToNum(info.fname);
+	}
+	f_closedir(&dp);
+	//关闭摄影状态
+	camera_on = 0;
+	//显示最近的一张图片
+	SD_ReadPhoto(photo_index[photo_index_index]);
+}
 /**@brief  Func初始化
   */
 void Init_Func(void)
 {
-	
+	SD_FindMaxNum();
+	for(int i=0;i<220;i++)
+	{
+		photo_index[i] = 0;
+	}
 }
 /**@brief  Func线程示例
   */
@@ -50,29 +126,80 @@ void Init_Button(void)
 	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_2MHz;
 	GPIO_Init(GPIOD,&GPIO_InitStruct);
 }
-int8_t camera_on = 1;
 int8_t led_on = 0x10;
+/*	 		摄影时				相册
+ *	右		摄影					index增加
+ *	中		打开相册				返回摄影(短按)/删除(长按)
+ *	左		灯					index减小
+ */
 void Task_Button(void* pvParameters)
 {
+	uint16_t long_count = 0;
 	while(1)
 	{
 		vTaskDelay(50);
 		if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_8)==Bit_RESET)
-		{
-			camera_on = 0;
+		{//最右侧
+			if(camera_on==1)
+			{//摄影时
+				camera_on=0;
+				
+				//我真应该把蓝粉白写成一个函数
+				uint16_t height = 240/3;
+				uint16_t width = 320;
+				uint16_t rgb565 = TFT_RGB888To565(0xffc7c7);
+				TFT_SetCursor(0,0,width,height);
+				for(int i=0;i<width*height;i++)
+				{
+					TFT_Write16Data(rgb565);
+				}
+				rgb565 = TFT_RGB888To565(0xf6f6f6);
+				TFT_SetCursor(0,height*1,width,height);
+				for(int i=0;i<width*height;i++)
+				{
+					TFT_Write16Data(rgb565);
+				}
+				rgb565 = TFT_RGB888To565(0x71c9ce);
+				TFT_SetCursor(0,height*2,width,height);
+				for(int i=0;i<width*height;i++)
+				{
+					TFT_Write16Data(rgb565);
+				}
+				
+				SD_KeepPhoto();
+				camera_on = 1;
+			}
 			vTaskDelay(10);
 			while(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_8)==Bit_RESET);
 			vTaskDelay(10);
 		}
 		else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)==Bit_RESET)
-		{
-			camera_on = 1;
+		{//中间
 			vTaskDelay(10);
-			while(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)==Bit_RESET);
+			while(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)==Bit_RESET)
+			{
+				vTaskDelay(10);
+				if(long_count++==200)
+				{//长按判定
+					U_Printf(":)");
+				}
+			}
 			vTaskDelay(10);
+			if(long_count<200)
+			{
+				if(camera_on==0)
+				{
+					camera_on = 1;
+				}
+				else
+				{
+					Open_Photo_Count();
+				}
+			}
+			long_count = 0;
 		}
 		else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10)==Bit_RESET)
-		{
+		{//最左侧
 			led_on<<=1;//0x0000 1000
 			if(led_on>=0x20)
 			{
@@ -94,7 +221,6 @@ void Task_Button(void* pvParameters)
 }
 /**@brief  摄像头采集，屏幕刷新线程
   */
-extern uint8_t camera_data[];
 extern const unsigned char gImage_a[];
 void Task_Camera(void* pvParameters)
 {
@@ -126,12 +252,7 @@ void Task_Camera(void* pvParameters)
 		//采集数据
 		OV_GetPixels();
 		//屏幕显示
-		TFT_SetCursor(10,20,300,100);
-		TFT_SPI_SetAddr(&camera_data[0]);
-		TFT_SPI_DMA(300*100*2);
-		TFT_SetCursor(10,120,300,100);
-		TFT_SPI_SetAddr(&camera_data[300*100*2]);
-		TFT_SPI_DMA(300*100*2);
+		Func_TFT_Show();
 	}
 }
 

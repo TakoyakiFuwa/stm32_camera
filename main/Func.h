@@ -12,4 +12,8 @@ void Task_Button(void* pvParameters);
 void Cmd_Func(void);
 void Task_Camera(void* pvParameters);
 
+
+void Func_TFT_Show(void);
+void SD_FindMaxNum(void);
+
 #endif

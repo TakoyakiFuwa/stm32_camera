@@ -1095,6 +1095,11 @@
               <FileType>5</FileType>
               <FilePath>..\main\Shadow.h</FilePath>
             </File>
+            <File>
+              <FileName>cmr_def.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\main\cmr_def.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

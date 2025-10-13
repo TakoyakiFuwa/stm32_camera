@@ -4,6 +4,8 @@
 /*  系统(仅提供delay)  */
 #include "FreeRTOS.h"
 #include "task.h"
+/*  宏定义数据  */
+#include "cmr_def.h"
 
 /*	不是....
  *	引脚也太多了点....
@@ -43,8 +45,8 @@
  *	PD4		->	GND
  */
 //输出尺寸
-#define OV_Output_width 	300		//最高好像是314 且会有黑边
-#define OV_Output_height	200		//最高248 达到240标准
+#define OV_Output_width 	DEF_PIC_WIDTH		//最高好像是314 且会有黑边
+#define OV_Output_height	DEF_PIC_HEIGHT		//最高248 达到240标准
 //数据存放地址
 extern uint8_t camera_data[];
 //SCL
@@ -335,7 +337,7 @@ void Init_OV(uint32_t* data_addr)
 		//软件初始化
 	OV_SoftwareInit();
 		//设置窗口位置152,0,-,-
-	OV_config_window(168,20,OV_Output_width,OV_Output_height);
+	OV_config_window(DEF_OV_X,DEF_OV_Y,OV_Output_width,OV_Output_height);
 	vTaskDelay(100);
 		//开启DCMI外设
 	OV_DCMI_Init(data_addr);
