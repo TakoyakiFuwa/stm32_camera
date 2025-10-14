@@ -145,6 +145,17 @@ void Init_TFT(uint8_t* data_addr)
 	{
 		TFT_Write16Data(rgb565);
 	}
+		//定位线
+	TFT_SetCursor(304,0,1,240);
+	for(int i=0;i<240;i++)
+	{
+		TFT_Write16Data(rgb565<<2);
+	}
+	TFT_SetCursor(305,0,16,16);
+	for(int i=0;i<16*16;i++)
+	{
+		TFT_Write16Data(rgb565>>2);
+	}
 	U_Printf("TFT初始化完成 \r\n");
 }
 /**@brief  硬件SPI初始化

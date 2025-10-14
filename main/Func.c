@@ -84,6 +84,21 @@ void Open_Photo_Count(void)
 	//显示最近的一张图片
 	SD_ReadPhoto(photo_index[photo_index_index]);
 }
+#include "UI_Core.h"
+extern int8_t STATUS_ON_UI;
+void Task_UI(void* pvParameters)
+{
+	while(1)
+	{
+		vTaskDelay(50);
+		if(!STATUS_ON_UI)
+		{
+			vTaskDelay(100);
+			return;
+		}
+		RenderCircle_UI();
+	}
+}
 /**@brief  Func初始化
   */
 void Init_Func(void)

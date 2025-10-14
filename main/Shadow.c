@@ -49,6 +49,7 @@ void Main_Start(void* pvParameters)
 //	}
 	Init_TFT((uint8_t*)&camera_data[0]);
 	Init_UIR();
+	Init_UI();
 //	Init_OV((uint32_t*)&camera_data[0]);
 	camera_data[0] = 0;
 		//按键/补光灯内容
@@ -61,6 +62,7 @@ void Main_Start(void* pvParameters)
 		//Func测试
 //	xTaskCreate(Task_Camera,"Camera",128,NULL,8,NULL);
 //	xTaskCreate(Task_Button,"Button",256+128,NULL,5,NULL);
+	xTaskCreate(Task_UI,"UI",256,NULL,7,NULL);
 	
 		//退出临界区
 	taskEXIT_CRITICAL();	
@@ -72,6 +74,7 @@ void Main_Start(void* pvParameters)
 /**@brief  命令行创建接口
   *@param  1有匹配 0没匹配转到BaseFunc
   */
+extern qy_pointer CURSOR;
 extern int8_t camera_on ;
 int8_t Cmd(void)
 {
@@ -124,18 +127,22 @@ int8_t Cmd(void)
 	else if(Command("a"))
 	{
 		U_Printf("a \r\n");
+		CURSOR.ui->Func_Event_LEFT(CURSOR.ui);
 	}
 	else if(Command("s"))
 	{
 		U_Printf("s \r\n");
+		CURSOR.ui->Func_Event_OK(CURSOR.ui);
 	}
 	else if(Command("d"))
 	{
 		U_Printf("d \r\n");
+		CURSOR.ui->Func_Event_RIGHT(CURSOR.ui);
 	}
 	else if(Command("A"))
 	{
 		U_Printf("A! \r\n");
+		CURSOR.ui->Func_Event_UP(CURSOR.ui);
 	}
 	else if(Command("S"))
 	{
@@ -144,6 +151,13 @@ int8_t Cmd(void)
 	else if(Command("D"))
 	{
 		U_Printf("D! \r\n");
+		CURSOR.ui->Func_Event_DOWN(CURSOR.ui);
+	}
+	else if(Command("R"))
+	{
+		U_Printf("系统即将重置 \r\n");
+		vTaskDelay(1000);
+		NVIC_SystemReset();
 	}
 	
 	

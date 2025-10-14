@@ -21,7 +21,9 @@ qy_ui		UI[200];
 qy_page		PAGE[8];
 	//空变量
 qy_ui 	NULL_UI;
-void 	NULL_FUNC(qy_ui* null){}
+void 	NULL_FUNC(qy_ui* null){
+	U_Printf("未绑定操作函数 \r\n");
+}
 uint8_t NULL_FUNC_PAGE(void){return 0;}
 	//渲染队列
 qy_ui* 	UI_RENDER_QUEUE[200];
@@ -29,11 +31,16 @@ uint8_t UI_RENDER_QUEUE_INDEX = 0;
 /*  状态位，允许UI刷新  */
 int8_t STATUS_ON_UI = 1;
 
+#include "UI_Instance.h"
 static uint8_t Init_PAGE(void)
 {
-
+	uint8_t ui_indexs[] = {InUI_Test_Num,InUI_Test_Button0,InUI_Test_Button1,InUI_Test_Frame};
+	UI_CreatePage(&PAGE[InPG_Test],ui_indexs,sizeof(ui_indexs)/sizeof(uint8_t),Test_PageInit);
+	uint8_t page_UI_Index_FIX[] = {InUI_Fix_String,InUI_Fix_Num,InUI_Test_Num,InUI_Test_Button0,InUI_Test_Button1,InUI_Test_Frame};
+	UI_CreatePage(&PAGE[InPG_Fix],page_UI_Index_FIX,sizeof(page_UI_Index_FIX)/sizeof(uint8_t),PageInit_Fix);
+	
 	//返回第一个进入的页面
-	return 0;
+	return InPG_Fix;
 }
 
 /**@brief  UI初始化
@@ -82,7 +89,7 @@ void RenderCircle_UI(void)
 	}
 	for(int i=0;i<200;i++)
 	{
-		if(UI_RENDER_QUEUE[i]->is_present&0x80!=0)
+		if((UI_RENDER_QUEUE[i]->is_present&0x80)!=0)
 		{
 			break;
 		}
@@ -98,9 +105,10 @@ void UI_AddRender(qy_ui* ui)
 {
 	if(ui->is_present&0x01==0 || ui->is_present&0x02==1)
 	{
-		UI_RENDER_QUEUE[UI_RENDER_QUEUE_INDEX++] = ui;
-		ui->is_present |= 0x02;	//已经渲染的标志位
+		return;
 	}
+	UI_RENDER_QUEUE[UI_RENDER_QUEUE_INDEX++] = ui;
+	ui->is_present |= 0x02;	//已经渲染的标志位
 }
 /**@brief  创建UI
   *@param  x,y				位置
@@ -190,7 +198,7 @@ void UI_ChangePage(uint8_t InPG)
 		index = _uis[i];
 		if(index==250)
 		{break;}
-		UI[index].is_present |= 0x01;
+		UI[index].is_present = 0x01;
 		UI_AddRender(&UI[index]);
 	}
 		//光标到新的UI上
