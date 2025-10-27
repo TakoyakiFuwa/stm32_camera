@@ -40,6 +40,9 @@ extern const char font_consolas_3216[][];
 extern const unsigned char pic_mugou_240_201[];
 extern const unsigned char pic_sunrain_16_16[520];
 extern const unsigned char pic01_LED_1616[32];
+extern const unsigned char pic_sunrain_32_32[];
+extern const unsigned char font_QYyqy_32_32[][128];
+extern const unsigned char pic_mugou_100118[23600];
 /**@brief  UI_Render初始化
   *@param  void
   *@retval void
@@ -52,6 +55,9 @@ void Init_UIR(void)
 	FONT[InFT_Consolas_3216] = UIR_CreateFont((const char*)font_consolas_3216,32,16);
 	FONT[InPIC_SunRain_1616] = UIR_CreateFont((const char*)pic_sunrain_16_16,16,16);
 	FONT[InPIC01_LED_1616] = UIR_CreateFont((const char*)pic01_LED_1616,16,16);
+	FONT[InPIC_SunRain_3232] = UIR_CreateFont((const char*)pic_sunrain_32_32,32,32);
+	FONT[InFT_QYyqy_3232] = UIR_CreateFont((const char*)font_QYyqy_32_32,32,32);
+	FONT[InPIC_MuGo] = UIR_CreateFont((const char*)pic_mugou_100118,118,100);
 	U_Printf("UI_Render初始化完成 \r\n");
 }
 

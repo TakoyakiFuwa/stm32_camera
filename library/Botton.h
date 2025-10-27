@@ -3,6 +3,7 @@
 #include "stdint.h"
 
 void Init_Botton(void);
-
+void Botton_Func_Null(void);
+void Task_Botton(void* pvParameters);
 
 #endif

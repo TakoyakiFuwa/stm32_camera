@@ -34,14 +34,25 @@ int8_t STATUS_ON_UI = 1;
 #include "UI_Instance.h"
 static uint8_t Init_PAGE(void)
 {
+	//侧边栏
 	uint8_t page_UI_Index_FIX[] = {
 			InUI_Fix_BKGround,InUI_Fix_Battery,InUI_Fix_Cursor,InUI_Fix_LED,
 			InUI_Fix_PicNum,InUI_Fix_QY,InUI_Fix_SunRain
 		};
 	UI_CreatePage(&PAGE[InPG_Fix],page_UI_Index_FIX,sizeof(page_UI_Index_FIX)/sizeof(uint8_t),PageInit_Fix);
+	//开始界面
+	uint8_t page_UI_Index_Start[] = {
+			//包含侧边栏的内容
+			InUI_Fix_BKGround,InUI_Fix_Battery,InUI_Fix_Cursor,InUI_Fix_LED,
+			InUI_Fix_PicNum,InUI_Fix_QY,InUI_Fix_SunRain
+			//
+			,InUI_Start_BKGround,InUI_Start_QY,InUI_Start_SDprocess,
+			InUI_Start_SDstatus,InUI_Start_SDstring,InUI_Start_SDpic
+		};
+	UI_CreatePage(&PAGE[InPG_Start],page_UI_Index_Start,sizeof(page_UI_Index_Start)/sizeof(uint8_t),PageInit_Start);
 	
 	//返回第一个进入的页面
-	return InPG_Fix;
+	return InPG_Start;
 }
 
 /**@brief  UI初始化

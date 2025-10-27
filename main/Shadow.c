@@ -10,6 +10,7 @@
 #include "task.h"
 /*  外设库  */
 #include "U_USART.h"
+#include "M_ADC.h"
 /*  屏幕库  */
 #include "TFT_ST7789V.h"
 /*  相机库  */
@@ -21,11 +22,18 @@
 /*  UI库  */
 #include "UI_Core.h"
 #include "UI_Render.h"
+#include "UI_Instance.h"
+/*  按键库  */
+#include "botton.h"
 
 /*  项目中用到的全局变量  */
+//缓存数据
 uint8_t camera_data[DEF_PIC_HEIGHT*DEF_PIC_WIDTH*2];
-uint16_t pic_index = 0;
-int8_t sign_SDONNNNNN = 1;
+//控制camera线程
+int8_t camera_on = 1;
+//SD卡是否正常工作
+int8_t SD_on = 1;
+
 
 /*	希望我这次重新写模板可以用的久一点...
  *	想开始做一些很有趣的项目....
@@ -39,32 +47,32 @@ void Main_Start(void* pvParameters)
 	//基本功能函数
 	BF_Start();
 	//初始化 建议格式:Init_XXX()
-	if(Init_BMP()!=0)
-	{
-		sign_SDONNNNNN = 0;
-	}
-	else
-	{
-		Init_Func();
-	}
+		//先获取电池电压
+	Init_ADC();
+		//屏幕 显示开始界面
 	Init_TFT((uint8_t*)&camera_data[0]);
 	Init_UIR();
 	Init_UI();
-	Init_ADC();
+			///渲染开始界面
+	RenderCircle_UI();
+		//等待SD卡挂载
+	Init_BMP();
+		//摄像头初始化
 	Init_OV((uint32_t*)&camera_data[0]);
 	camera_data[0] = 0;
 		//按键/补光灯内容
 	Init_Light();
-	Init_Button();
+	Init_Botton();
+	vTaskDelay(500);
 	
 	//线程	 建议格式:Task_XXX()
 		//进入临界区
 	taskENTER_CRITICAL();
 		//Func测试
-	xTaskCreate(Task_Camera,"Camera",128,NULL,8,NULL);
-	xTaskCreate(Task_Button,"Button",256+128,NULL,5,NULL);
+	xTaskCreate(Task_Botton,"Botton",256+128,NULL,5,NULL);
 	xTaskCreate(Task_UI,"UI",256,NULL,7,NULL);
 	xTaskCreate(Task_GetADC,"ADC",256,NULL,5,NULL);
+	xTaskCreate(Task_Camera,"Camera",128,NULL,8,NULL);
 	
 		//退出临界区
 	taskEXIT_CRITICAL();	
