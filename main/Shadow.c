@@ -39,30 +39,32 @@ void Main_Start(void* pvParameters)
 	//基本功能函数
 	BF_Start();
 	//初始化 建议格式:Init_XXX()
-//	if(Init_BMP()!=0)
-//	{
-//		sign_SDONNNNNN = 0;
-//	}
-//	else
-//	{
-//		Init_Func();
-//	}
+	if(Init_BMP()!=0)
+	{
+		sign_SDONNNNNN = 0;
+	}
+	else
+	{
+		Init_Func();
+	}
 	Init_TFT((uint8_t*)&camera_data[0]);
 	Init_UIR();
 	Init_UI();
-//	Init_OV((uint32_t*)&camera_data[0]);
+	Init_ADC();
+	Init_OV((uint32_t*)&camera_data[0]);
 	camera_data[0] = 0;
 		//按键/补光灯内容
-//	Init_Light();
-//	Init_Button();
+	Init_Light();
+	Init_Button();
 	
 	//线程	 建议格式:Task_XXX()
 		//进入临界区
 	taskENTER_CRITICAL();
 		//Func测试
-//	xTaskCreate(Task_Camera,"Camera",128,NULL,8,NULL);
-//	xTaskCreate(Task_Button,"Button",256+128,NULL,5,NULL);
+	xTaskCreate(Task_Camera,"Camera",128,NULL,8,NULL);
+	xTaskCreate(Task_Button,"Button",256+128,NULL,5,NULL);
 	xTaskCreate(Task_UI,"UI",256,NULL,7,NULL);
+	xTaskCreate(Task_GetADC,"ADC",256,NULL,5,NULL);
 	
 		//退出临界区
 	taskEXIT_CRITICAL();	

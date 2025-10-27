@@ -5,6 +5,8 @@
 #define InFT_Consolas_1608		0
 #define InFT_Consolas_3216		1
 #define InPIC_MuGo				2
+#define InPIC_SunRain_1616		3
+#define InPIC01_LED_1616		4
 
 /*  字体结构体  */
 typedef struct qy_font{

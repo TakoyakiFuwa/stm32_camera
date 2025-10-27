@@ -34,9 +34,10 @@ int8_t STATUS_ON_UI = 1;
 #include "UI_Instance.h"
 static uint8_t Init_PAGE(void)
 {
-	uint8_t ui_indexs[] = {InUI_Test_Num,InUI_Test_Button0,InUI_Test_Button1,InUI_Test_Frame};
-	UI_CreatePage(&PAGE[InPG_Test],ui_indexs,sizeof(ui_indexs)/sizeof(uint8_t),Test_PageInit);
-	uint8_t page_UI_Index_FIX[] = {InUI_Fix_String,InUI_Fix_Num,InUI_Test_Num,InUI_Test_Button0,InUI_Test_Button1,InUI_Test_Frame};
+	uint8_t page_UI_Index_FIX[] = {
+			InUI_Fix_BKGround,InUI_Fix_Battery,InUI_Fix_Cursor,InUI_Fix_LED,
+			InUI_Fix_PicNum,InUI_Fix_QY,InUI_Fix_SunRain
+		};
 	UI_CreatePage(&PAGE[InPG_Fix],page_UI_Index_FIX,sizeof(page_UI_Index_FIX)/sizeof(uint8_t),PageInit_Fix);
 	
 	//返回第一个进入的页面

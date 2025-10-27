@@ -99,6 +99,54 @@ void Task_UI(void* pvParameters)
 		RenderCircle_UI();
 	}
 }
+/*  ？？？写的好乱好乱....又要烂尾了...  */
+void Task_GetADC_toSD(void* pvParameters)
+{
+	while(1)
+	{
+		vTaskDelay(3000);
+		uint16_t value_count = 0;
+		for(int i=0;i<10;i++)
+		{
+			value_count += M_ADC_Get();
+		}
+		value_count/=10;
+		U_Printf("%d \r\n",value_count);
+		FIL fp;
+		f_open(&fp,"0:/battery.txt",FA_OPEN_APPEND|FA_WRITE);
+		uint8_t _string[6];
+		_string[2] = '0'+value_count%10;
+		value_count /= 10;
+		_string[1] = '0'+value_count%10;
+		value_count /= 10;
+		_string[0] = '0'+value_count;
+		_string[3] = '\r';
+		_string[4] = '\n';
+		_string[5] = '\0';
+		U_Printf("_string:[%s",_string);
+		f_write(&fp,_string,5,NULL);
+		f_close(&fp);
+	}
+}
+void Task_GetADC(void* pvParameters)
+{
+	int16_t old_value = 0;
+	while(1)
+	{
+		vTaskDelay(3000);
+		int16_t value = 0;
+		for(int i=0;i<10;i++)
+		{
+			value+=M_ADC_Get();
+		}
+		value/=10;
+		if(value-old_value>4 || old_value-value>4)
+		{
+			old_value = value;
+		}
+		U_Printf("电压输出:[%d]/[%d] \r\n",value,old_value);
+	}
+}
 /**@brief  Func初始化
   */
 void Init_Func(void)
@@ -187,6 +235,7 @@ void Task_Button(void* pvParameters)
 			vTaskDelay(10);
 			while(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_8)==Bit_RESET);
 			vTaskDelay(10);
+			camera_on = 0;
 		}
 		else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)==Bit_RESET)
 		{//中间

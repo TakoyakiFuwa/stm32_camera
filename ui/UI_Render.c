@@ -38,6 +38,8 @@ static inline void UIR_Pixel(uint16_t rgb565)
 extern const char font_consolas_1608[][];
 extern const char font_consolas_3216[][];
 extern const unsigned char pic_mugou_240_201[];
+extern const unsigned char pic_sunrain_16_16[520];
+extern const unsigned char pic01_LED_1616[32];
 /**@brief  UI_Render初始化
   *@param  void
   *@retval void
@@ -48,6 +50,8 @@ void Init_UIR(void)
 	//字体绑定
 	FONT[InFT_Consolas_1608] = UIR_CreateFont((const char*)font_consolas_1608,16,8);
 	FONT[InFT_Consolas_3216] = UIR_CreateFont((const char*)font_consolas_3216,32,16);
+	FONT[InPIC_SunRain_1616] = UIR_CreateFont((const char*)pic_sunrain_16_16,16,16);
+	FONT[InPIC01_LED_1616] = UIR_CreateFont((const char*)pic01_LED_1616,16,16);
 	U_Printf("UI_Render初始化完成 \r\n");
 }
 
