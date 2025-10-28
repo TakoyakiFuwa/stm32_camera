@@ -9,6 +9,7 @@ void Init_Func(void);
 void Task_Func(void* pvParameters);
 void Init_Light(void);
 void Cmd_Func(void);
+void Func_TFT_Show(void);
 void Task_Camera(void* pvParameters);
 void Task_UI(void* pvParameters);
 void Task_GetADC(void* pvParameters);

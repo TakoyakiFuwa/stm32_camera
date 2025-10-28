@@ -431,7 +431,7 @@ void SD_Fast_Write(const char* file_name,uint16_t* data,uint32_t length)
   *@param  length		读出的数据长度(单位是uint16_t)
   *@retval void
   */
-void SD_Fast_Read(const char* file_name,uint16_t* data,uint32_t length)
+int8_t SD_Fast_Read(const char* file_name,uint16_t* data,uint32_t length)
 {
 	//路径处理
 	uint8_t path[50];
@@ -446,8 +446,8 @@ void SD_Fast_Read(const char* file_name,uint16_t* data,uint32_t length)
 	FIL fp;
 	if(f_open(&fp,(const TCHAR*)path,FA_READ)!=FR_OK)
 	{
-		U_Printf("SD_Fast_Read创建文件[%s]异常:%d \r\n",path,f_open(&fp,(const TCHAR*)path,FA_READ));
-		return;
+		U_Printf("SD_Fast_Read读取文件[%s]异常:%d \r\n",path,f_open(&fp,(const TCHAR*)path,FA_READ));
+		return 0;
 	}
 	//读取文件
 	length/=2;
@@ -455,6 +455,7 @@ void SD_Fast_Read(const char* file_name,uint16_t* data,uint32_t length)
 	f_read(&fp,(void*)&data[length],sizeof(uint16_t)*length,0);
 	//关闭文件
 	f_close(&fp);
+	return 1;
 }
 #include "TFT_ST7789V.h"
 void Cmd_BMP(void)

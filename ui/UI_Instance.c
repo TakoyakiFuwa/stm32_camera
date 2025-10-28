@@ -172,7 +172,8 @@ void Render_Start_SDpic(qy_ui* u)
 //		vTaskDelay(1000);
 //	}
 }
-/*  开始加载时的页面  */
+/**@brief  开机加载界面
+  */
 uint8_t PageInit_Start(void)
 {
 	PageInit_Fix();
@@ -187,6 +188,37 @@ uint8_t PageInit_Start(void)
 }
 
 
+
+/*  相册界面  */
+extern int16_t album_index;
+extern int16_t album_num;
+extern const char BMP_PATH_fast[];
+void Render_Album_File(qy_ui* u)
+{
+	char path[50];
+	BMP_NumToString(album_index,path);
+	BMP_Path(BMP_PATH_fast,(uint8_t*)path,".qy");
+	TFT_SetRotation(DEF_TFT_ROTAUI);
+	UIR_ShowString(u->x,u->y,(const char*)path,11,u->InFT,u->ft_color,u->bk_color);
+	TFT_SetRotation(DEF_TFT_ROTA);
+}
+void Render_Album_Index(qy_ui* u)
+{
+	TFT_SetRotation(DEF_TFT_ROTAUI);
+	UIR_ShowNum(u->x,u->y,album_num,3,u->InFT,u->ft_color,u->bk_color);
+	TFT_SetRotation(DEF_TFT_ROTA);
+}
+/**@brief  相册界面
+  */
+uint8_t PageInit_Album(void)
+{
+	PageInit_Fix();
+		//
+	UI[InUI_Album_File] = UI_CreateUI(24,0,InFT_Consolas_1608,TFT_RGB888To565(0x909090),UI[InUI_Fix_Base].bk_color,Render_Album_File);
+	Other_StringCpy(UI[InUI_Album_File].value_space,"file_path");
+	UI[InUI_Album_Index] = UI_CreateUI(24+92,0,InFT_Consolas_1608,0,UI[InUI_Fix_Base].bk_color,Render_Album_Index);
+	return InUI_Fix_Cursor;
+}
 
 
 

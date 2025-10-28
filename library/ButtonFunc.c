@@ -54,6 +54,8 @@ void Init_BUT(void)
 	U_Printf("BUT初始化 \r\n");
 	//按键映射
 	BOT_RIGHT_after = BUT_KeepPhoto;
+	BOT_MIDDLE_after = BUT_AlbumControl;
+	BOT_LEFT_after = BUT_Album_Prior;
 
 	//相片数查询
 	pic_index = BUT_FindMaxNum(BMP_PATH_fast,&pic_num);
@@ -116,7 +118,7 @@ void BUT_KeepPhoto(void)
 		return;
 	}
 	//快速写入
-	uint8_t path[10];
+	uint8_t path[6];
 	BMP_NumToString(++pic_index,(char*)path);
 	SD_Fast_Write((const char*)path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
 	pic_num++;
@@ -128,21 +130,81 @@ void BUT_KeepPhoto(void)
 }
 //关于相册，这里最合适的做法是...
 //打开UI 让UI管理接管按键
-void BUT_OpenAlbum(void)
+#include "Func.h"
+int16_t album_index = 1;
+int16_t album_num = 1;
+void BUT_AlbumControl(void)
 {
-	camera_on = 0;
-}
-void BUT_CloseAlbum(void)
-{
-	camera_on = 1;
+	if(camera_on==1)
+	{
+		//状态位和功能键
+		camera_on = 0;
+		BOT_RIGHT_after = BUT_Album_Next;
+		//显示第一张图片
+		album_index = pic_index;
+		album_num = pic_num;
+		char path[6];
+		BMP_NumToString(album_index,path);
+		SD_Fast_Read((const char*)path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
+		Func_TFT_Show();
+		//渲染侧边栏
+		UI_ChangePage(InPG_Album);
+		RenderCircle_UI();
+	}
+	else
+	{
+		BOT_RIGHT_after = BUT_KeepPhoto;
+		//重新渲染侧边栏
+		UI_ChangePage(InPG_Fix);
+		RenderCircle_UI();
+		camera_on = 1;
+	}
 }
 void BUT_Album_Next(void)
 {
-
+	++album_num;
+	++album_index;
+	char path[6];
+	BMP_NumToString(album_index,path);
+	while(SD_Fast_Read((const char*)path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH)!=1)
+	{
+		album_index++;
+		UI_AddRender(&UI[InUI_Album_File]);
+		RenderCircle_UI();
+		if(album_index>pic_index)
+		{
+			album_num = 1;
+			album_index = 0;
+		}
+		BMP_NumToString(album_index,path);
+	}
+	UI_AddRender(&UI[InUI_Album_File]);
+	UI_AddRender(&UI[InUI_Album_Index]);
+	RenderCircle_UI();
+	Func_TFT_Show();
 }
 void BUT_Album_Prior(void)
 {
-
+	--pic_num;
+	--album_index;
+	char path[6];
+	BMP_NumToString(album_index,path);
+	while(SD_Fast_Read((const char*)path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH)!=1)
+	{
+		album_index--;
+		UI_AddRender(&UI[InUI_Album_File]);
+		RenderCircle_UI();
+		if(album_index<0)
+		{
+			album_num = pic_num;
+			album_index = pic_index;
+		}
+		BMP_NumToString(album_index,path);
+	}
+	UI_AddRender(&UI[InUI_Album_File]);
+	UI_AddRender(&UI[InUI_Album_Index]);
+	RenderCircle_UI();
+	Func_TFT_Show();
 }
 void BUT_Album_Delete(void)
 {

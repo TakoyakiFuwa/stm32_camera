@@ -36,10 +36,10 @@ int8_t camera_on = 0;
 //SD卡是否正常工作
 int8_t SD_on = 1;
 //存储位置相关
-const char BMP_PATH_bmp[] 	= {"0:/cmr/b"};
+const char BMP_PATH_bmp[] 	= {"0:/cmr/"};
 const char BMP_PATH_fast[] 	= {"0:/f/"};
 //图片处理相关（ButtonFunc.c）
-uint16_t pic_index = 0;		//当前图片的下标->作为保存图片的名字
+uint16_t pic_index = 0;		//保存在SD卡中的文件名
 uint16_t pic_num = 0;		//总数量
 
 /*	希望我这次重新写模板可以用的久一点...

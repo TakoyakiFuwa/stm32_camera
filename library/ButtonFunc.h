@@ -5,8 +5,7 @@
 void Init_BUT(void);
 uint16_t BUT_FindMaxNum(const char* path,uint16_t* total_num);
 void BUT_KeepPhoto(void);
-void BUT_OpenAlbum(void);
-void BUT_CloseAlbum(void);
+void BUT_AlbumControl(void);
 void BUT_Album_Next(void);
 void BUT_Album_Prior(void);
 void BUT_Album_Delete(void);
