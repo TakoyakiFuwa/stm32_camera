@@ -21,8 +21,8 @@
  *		——2025/10/6.19:41-秦羽
  */
 
-const char BMP_PATH_bmp[] 	= {"0:/cmr/"};
-const char BMP_PATH_fast[] 	= {"0:/f/f"};
+extern const char BMP_PATH_bmp[];
+extern const char BMP_PATH_fast[];
 
 FATFS fs;
 typedef struct{
@@ -53,7 +53,7 @@ int8_t Init_BMP(void)
 	if(f_mount(&fs,"0:",1)!=FR_OK)
 	{
 		U_Printf("SD卡初始化异常,代码:%d \r\n",f_mount(&fs,"0:",1));
-		return -1;
+		return f_mount(&fs,"0:",1);
 	}
 	else if(f_opendir(&dp,BMP_PATH_bmp)!=FR_OK)
 	{

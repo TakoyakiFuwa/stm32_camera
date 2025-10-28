@@ -36,18 +36,19 @@ static uint8_t Init_PAGE(void)
 {
 	//侧边栏
 	uint8_t page_UI_Index_FIX[] = {
-			InUI_Fix_BKGround,InUI_Fix_Battery,InUI_Fix_Cursor,InUI_Fix_LED,
-			InUI_Fix_PicNum,InUI_Fix_QY,InUI_Fix_SunRain
+			InUI_Fix_Base,InUI_Fix_Battery,InUI_Fix_Cursor,InUI_Fix_LED,
+			InUI_Fix_PicNum,InUI_Fix_QY,InUI_Fix_SunRain,
+			InUI_Fix_BKGround,InUI_Fix_BKQY
 		};
 	UI_CreatePage(&PAGE[InPG_Fix],page_UI_Index_FIX,sizeof(page_UI_Index_FIX)/sizeof(uint8_t),PageInit_Fix);
 	//开始界面
 	uint8_t page_UI_Index_Start[] = {
 			//包含侧边栏的内容
-			InUI_Fix_BKGround,InUI_Fix_Battery,InUI_Fix_Cursor,InUI_Fix_LED,
+			InUI_Fix_Base,InUI_Fix_Battery,InUI_Fix_Cursor,InUI_Fix_LED,
 			InUI_Fix_PicNum,InUI_Fix_QY,InUI_Fix_SunRain
 			//
-			,InUI_Start_BKGround,InUI_Start_QY,InUI_Start_SDprocess,
-			InUI_Start_SDstatus,InUI_Start_SDstring,InUI_Start_SDpic
+			,InUI_Fix_BKGround,InUI_Fix_BKQY,InUI_Start_SDstring
+//			InUI_Start_SDstatus,InUI_Start_SDpic,InUI_Start_SDprocess
 		};
 	UI_CreatePage(&PAGE[InPG_Start],page_UI_Index_Start,sizeof(page_UI_Index_Start)/sizeof(uint8_t),PageInit_Start);
 	
@@ -94,11 +95,11 @@ void Init_UI(void)
 }
 void RenderCircle_UI(void)
 {
-	//判断状态位
-	if(STATUS_ON_UI!=1)
-	{//UI关闭，不允许刷新
-		return;
-	}
+	//判断状态位 - 现在状态位用于线程管理，不必多余判断....
+//	if(STATUS_ON_UI!=1)
+//	{//UI关闭，不允许刷新
+//		return;
+//	}
 	for(int i=0;i<200;i++)
 	{
 		if((UI_RENDER_QUEUE[i]->is_present&0x80)!=0)

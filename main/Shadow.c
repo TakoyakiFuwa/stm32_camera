@@ -29,11 +29,18 @@
 /*  项目中用到的全局变量  */
 //缓存数据
 uint8_t camera_data[DEF_PIC_HEIGHT*DEF_PIC_WIDTH*2];
+//控制UI线程
+extern int8_t STATUS_ON_UI;
 //控制camera线程
-int8_t camera_on = 1;
+int8_t camera_on = 0;
 //SD卡是否正常工作
 int8_t SD_on = 1;
-
+//存储位置相关
+const char BMP_PATH_bmp[] 	= {"0:/cmr/b"};
+const char BMP_PATH_fast[] 	= {"0:/f/"};
+//图片处理相关（ButtonFunc.c）
+uint16_t pic_index = 0;		//当前图片的下标->作为保存图片的名字
+uint16_t pic_num = 0;		//总数量
 
 /*	希望我这次重新写模板可以用的久一点...
  *	想开始做一些很有趣的项目....
@@ -55,23 +62,26 @@ void Main_Start(void* pvParameters)
 	Init_UI();
 			///渲染开始界面
 	RenderCircle_UI();
-		//等待SD卡挂载
-	Init_BMP();
+		//等待SD卡初始化
+	Init_SD();
 		//摄像头初始化
+		//如果摄像头出现画面偏移 建议检查Task_Camera是否为最高优先级
 	Init_OV((uint32_t*)&camera_data[0]);
 	camera_data[0] = 0;
 		//按键/补光灯内容
 	Init_Light();
 	Init_Botton();
-	vTaskDelay(500);
-	
+	vTaskDelay(1500);
+		//状态位初始化(打开摄影，关闭UI渲染)
+	STATUS_ON_UI = 0;
+	camera_on = 1;
 	//线程	 建议格式:Task_XXX()
 		//进入临界区
 	taskENTER_CRITICAL();
 		//Func测试
 	xTaskCreate(Task_Botton,"Botton",256+128,NULL,5,NULL);
 	xTaskCreate(Task_UI,"UI",256,NULL,7,NULL);
-	xTaskCreate(Task_GetADC,"ADC",256,NULL,5,NULL);
+//	xTaskCreate(Task_GetADC,"ADC",256,NULL,5,NULL);
 	xTaskCreate(Task_Camera,"Camera",128,NULL,8,NULL);
 	
 		//退出临界区

@@ -7,16 +7,16 @@
 #define InPG_Start			1
 	/*  UI  */
 		//固定的侧边栏内容（前10个）
-#define InUI_Fix_BKGround	0
+#define InUI_Fix_Base		0
 #define InUI_Fix_Cursor		1
 #define InUI_Fix_SunRain	2
 #define InUI_Fix_QY			3
 #define InUI_Fix_LED		4
 #define InUI_Fix_PicNum		5
 #define InUI_Fix_Battery	6
+#define InUI_Fix_BKGround	7		
+#define InUI_Fix_BKQY		8
 		//开始时的等待页面
-#define InUI_Start_BKGround		11		
-#define InUI_Start_QY			12
 #define InUI_Start_SDstring		13		//Waiting for SD:
 #define InUI_Start_SDstatus		14		//OK / Error  加载成功or失败
 #define InUI_Start_SDpic		15		//加载成功后随机显示一个图片

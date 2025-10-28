@@ -4,6 +4,7 @@
 #include "stm32f4xx.h"
 #include "stm32f4xx_conf.h"
 
+void Init_SD(void);
 void Init_Func(void);
 void Task_Func(void* pvParameters);
 void Init_Light(void);

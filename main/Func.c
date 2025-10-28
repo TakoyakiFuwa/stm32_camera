@@ -28,9 +28,46 @@ void Task_UI(void* pvParameters)
 		if(!STATUS_ON_UI)
 		{
 			vTaskDelay(100);
-			return;
+			continue;
 		}
 		RenderCircle_UI();
+	}
+}
+/*  SD初始化  */
+#include "UI_Instance.h"
+extern qy_pointer	CURSOR;
+extern qy_ui		UI[200];
+extern qy_page		PAGE[8];
+extern int8_t SD_on;
+void Init_SD(void)
+{
+		//等待SD卡挂载
+	if(Init_BMP()==0)
+	{//SD卡正常挂载
+		UI[InUI_Start_SDstatus].value_num = 0;
+		UI[InUI_Start_SDstatus].is_present = 1;
+		UI_AddRender(&UI[InUI_Start_SDstatus]);
+		RenderCircle_UI();
+		//显示SD测试BMP
+		UI[InUI_Start_SDpic].is_present = 1;
+		UI_AddRender(&UI[InUI_Start_SDpic]);
+		RenderCircle_UI();
+		UI[InUI_Start_SDprocess].is_present = 1;
+		UI_AddRender(&UI[InUI_Start_SDprocess]);
+		RenderCircle_UI();
+		//获取已有图片的数量和ID
+			//旧图片处理
+		//BMP_Change();
+				//待补充功能
+		UI_AddRender(&UI[InUI_Start_SDprocess]);
+		RenderCircle_UI();
+	}
+	else
+	{//SD卡挂载异常
+		UI[InUI_Start_SDstatus].value_num = Init_BMP();
+		UI_AddRender(&UI[InUI_Start_SDstatus]);
+		RenderCircle_UI();
+		SD_on = 0;
 	}
 }
 /*  ？？？写的好乱好乱....又要烂尾了...  */

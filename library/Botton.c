@@ -5,6 +5,8 @@
 /*  OS库  */
 #include "FreeRTOS.h"
 #include "task.h"
+//
+#include "ButtonFunc.h"
 
 #define DEF_BOTTON_LONG		100
 void (*BOT_LEFT_before)(void);
@@ -38,6 +40,8 @@ void Init_Botton(void)
 	BOT_RIGHT_before = Botton_Func_Null;
 	BOT_RIGHT_long = Botton_Func_Null;
 	BOT_RIGHT_after = Botton_Func_Null;
+	//按键函数绑定
+	Init_BUT();
 }
 void Botton_Func_Null(void)
 {
@@ -49,11 +53,11 @@ void Task_Botton(void* pvParameters)
 	while(1)
 	{
 		vTaskDelay(100);
-		if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_8)==Bit_RESET)
+		if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10)==Bit_RESET)
 		{
 			BOT_LEFT_before();
 			vTaskDelay(12);
-			while(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_8)==Bit_RESET)
+			while(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10)==Bit_RESET)
 			{
 				vTaskDelay(10);
 				if(botton_long_judge++==DEF_BOTTON_LONG)//1s
@@ -79,11 +83,11 @@ void Task_Botton(void* pvParameters)
 			vTaskDelay(12);
 			BOT_MIDDLE_after();
 		}
-		if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10)==Bit_RESET)
+		if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_8)==Bit_RESET)
 		{
 			BOT_RIGHT_before();
 			vTaskDelay(12);
-			while(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10)==Bit_RESET)
+			while(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_8)==Bit_RESET)
 			{
 				vTaskDelay(10);
 				if(botton_long_judge++==DEF_BOTTON_LONG)//1s

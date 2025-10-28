@@ -1065,6 +1065,16 @@
               <FileType>5</FileType>
               <FilePath>..\library\Botton.h</FilePath>
             </File>
+            <File>
+              <FileName>ButtonFunc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\library\ButtonFunc.c</FilePath>
+            </File>
+            <File>
+              <FileName>ButtonFunc.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\library\ButtonFunc.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
