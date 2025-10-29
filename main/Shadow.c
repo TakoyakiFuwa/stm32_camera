@@ -39,8 +39,9 @@ int8_t SD_on = 1;
 const char BMP_PATH_bmp[] 	= {"0:/cmr/"};
 const char BMP_PATH_fast[] 	= {"0:/f/"};
 //图片处理相关（ButtonFunc.c）
-uint16_t pic_index = 0;		//保存在SD卡中的文件名
-uint16_t pic_num = 0;		//总数量
+uint16_t pic_index[500];		//保存在SD卡中的文件名
+int16_t  pic_index_index = 0;	//(笑)index的index
+uint16_t pic_num = 0;			//总数量
 
 /*	希望我这次重新写模板可以用的久一点...
  *	想开始做一些很有趣的项目....

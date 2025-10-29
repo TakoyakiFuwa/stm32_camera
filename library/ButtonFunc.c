@@ -26,20 +26,18 @@ extern qy_ui		UI[];
 extern qy_page		PAGE[];
 /*  Shadow.c  */
 extern uint8_t camera_data[];
-extern uint16_t pic_index;
+extern uint16_t pic_index[];
+extern uint16_t pic_index_index;
 extern uint16_t pic_num;
 extern int8_t SD_on;
 extern int8_t camera_on;
 extern const char BMP_PATH_bmp[];
 extern const char BMP_PATH_fast[]; 
 /*  Botton.c  */
-extern void (*BOT_LEFT_before)(void);
 extern void (*BOT_LEFT_long)(void);
 extern void (*BOT_LEFT_after)(void);
-extern void (*BOT_MIDDLE_before)(void);
 extern void (*BOT_MIDDLE_long)(void);
 extern void (*BOT_MIDDLE_after)(void);
-extern void (*BOT_RIGHT_before)(void);
 extern void (*BOT_RIGHT_long)(void);
 extern void (*BOT_RIGHT_after)(void);
 
@@ -55,10 +53,9 @@ void Init_BUT(void)
 	//按键映射
 	BOT_RIGHT_after = BUT_KeepPhoto;
 	BOT_MIDDLE_after = BUT_AlbumControl;
-	BOT_LEFT_after = BUT_Album_Prior;
-
+	
 	//相片数查询
-	pic_index = BUT_FindMaxNum(BMP_PATH_fast,&pic_num);
+//	pic_index = BUT_FindMaxNum(BMP_PATH_fast,&pic_num);
 	UI_AddRender(&UI[InUI_Fix_PicNum]);
 	RenderCircle_UI();
 }
@@ -118,97 +115,164 @@ void BUT_KeepPhoto(void)
 		return;
 	}
 	//快速写入
-	uint8_t path[6];
-	BMP_NumToString(++pic_index,(char*)path);
-	SD_Fast_Write((const char*)path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
+		//下标(文件名处理)
 	pic_num++;
+	pic_index[pic_index_index] = pic_index[pic_index_index-1]+1;
+	pic_index[++pic_index_index] = 999;
 		//重新渲染数量
 	UI_AddRender(&UI[InUI_Fix_PicNum]);
 	RenderCircle_UI();
+		//写入SD卡
+	uint8_t path[6];
+	BMP_NumToString(pic_index[pic_index_index-1],(char*)path);
+	SD_Fast_Write((const char*)path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
 	//继续摄影功能
 	camera_on = 1;
 }
 //关于相册，这里最合适的做法是...
 //打开UI 让UI管理接管按键
 #include "Func.h"
-int16_t album_index = 1;
-int16_t album_num = 1;
 void BUT_AlbumControl(void)
 {
+	if(SD_on!=1)
+	{
+		camera_on = 0;
+		//蓝粉白
+		uint16_t rgb565 = TFT_RGB888To565(0xffc7c7);//0xFE38
+		UIR_DrawRect(0,0,304,80,rgb565);
+		rgb565 = TFT_RGB888To565(0xf6f6f6);//0xF7BE
+		UIR_DrawRect(0,80,304,80,rgb565);
+		rgb565 = TFT_RGB888To565(0x71c9ce);//0x7659
+		UIR_DrawRect(0,160,304,80,rgb565);
+		UI_AddRender(&UI[InUI_Fix_BKQY]);
+		RenderCircle_UI();
+		//显示报错
+		U_Printf("SD卡异常，无法打开相册  \r\n");
+		UIR_ShowString(5,80,"SD Error,  :(",18,InFT_Consolas_3216,0xF030,0xF7BE);
+		UIR_ShowString(5,120,"Can't Open Album.",18,InFT_Consolas_3216,0x0,0xF7BE);
+		vTaskDelay(1500);
+			//继续摄影功能
+		camera_on = 1;
+		return;
+	}
 	if(camera_on==1)
 	{
 		//状态位和功能键
 		camera_on = 0;
 		BOT_RIGHT_after = BUT_Album_Next;
+		BOT_LEFT_after = BUT_Album_Prior;
+		BOT_MIDDLE_long = BUT_Album_DeleteWindow;
 		//显示第一张图片
-		album_index = pic_index;
-		album_num = pic_num;
+		pic_index_index--;
 		char path[6];
-		BMP_NumToString(album_index,path);
+		BMP_NumToString(pic_index[pic_index_index],path);
 		SD_Fast_Read((const char*)path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
 		Func_TFT_Show();
 		//渲染侧边栏
-		UI_ChangePage(InPG_Album);
+		UI_AddRender(&UI[InUI_Fix_PicNum]);
 		RenderCircle_UI();
 	}
 	else
 	{
 		BOT_RIGHT_after = BUT_KeepPhoto;
+		BOT_MIDDLE_long = Botton_Func_Null;
+		BOT_LEFT_after = Botton_Func_Null;
 		//重新渲染侧边栏
-		UI_ChangePage(InPG_Fix);
+		pic_index_index = pic_num;
+		UI_AddRender(&UI[InUI_Fix_PicNum]);
 		RenderCircle_UI();
 		camera_on = 1;
 	}
 }
 void BUT_Album_Next(void)
 {
-	++album_num;
-	++album_index;
-	char path[6];
-	BMP_NumToString(album_index,path);
-	while(SD_Fast_Read((const char*)path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH)!=1)
+	//当前选中的图片下标
+	if(++pic_index_index>=pic_num)
 	{
-		album_index++;
-		UI_AddRender(&UI[InUI_Album_File]);
-		RenderCircle_UI();
-		if(album_index>pic_index)
-		{
-			album_num = 1;
-			album_index = 0;
-		}
-		BMP_NumToString(album_index,path);
+		pic_index_index = 1;
 	}
-	UI_AddRender(&UI[InUI_Album_File]);
-	UI_AddRender(&UI[InUI_Album_Index]);
+	//读取数据
+	char path[6];
+	BMP_NumToString(pic_index[pic_index_index],path);
+	SD_Fast_Read((const char*)path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
+	//UI渲染和显示
+	UI_AddRender(&UI[InUI_Fix_PicNum]);
 	RenderCircle_UI();
 	Func_TFT_Show();
 }
 void BUT_Album_Prior(void)
 {
-	--pic_num;
-	--album_index;
-	char path[6];
-	BMP_NumToString(album_index,path);
-	while(SD_Fast_Read((const char*)path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH)!=1)
+	//当前选中的图片下标
+	if(--pic_index_index<=0)
 	{
-		album_index--;
-		UI_AddRender(&UI[InUI_Album_File]);
-		RenderCircle_UI();
-		if(album_index<0)
-		{
-			album_num = pic_num;
-			album_index = pic_index;
-		}
-		BMP_NumToString(album_index,path);
+		pic_index_index = pic_num-1;
 	}
-	UI_AddRender(&UI[InUI_Album_File]);
-	UI_AddRender(&UI[InUI_Album_Index]);
+	//读取数据
+	char path[6];
+	BMP_NumToString(pic_index[pic_index_index],path);
+	SD_Fast_Read((const char*)path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
+	//UI渲染和显示
+	UI_AddRender(&UI[InUI_Fix_PicNum]);
 	RenderCircle_UI();
 	Func_TFT_Show();
 }
 void BUT_Album_Delete(void)
 {
-
+	if(UI[InUI_Start_Delete].value_num==0)
+	{
+		U_Printf("没有删除 \r\n");
+		Func_TFT_Show();
+	}
+	else
+	{
+		char path[50];
+		BMP_NumToString(pic_index[pic_index_index],path);
+		BMP_Path((const char*)BMP_PATH_fast,(uint8_t*)path,".qy");
+		f_unlink((const TCHAR*)path);
+		U_Printf("图片[%s]删除 \r\n",path);	
+		uint16_t temp = pic_index_index;
+		Func_Pic_Index_Init();
+		pic_index_index = temp;
+		BUT_Album_Prior();
+	}
+	BUT_Album_DeleteWindow();
+}
+void BUT_Album_DeleteWindow(void)
+{
+	static int8_t window_status = 0;
+	if(window_status==0)
+	{//打开删除确认窗口
+		window_status = 1;
+		UI[InUI_Start_Delete].value_num = 0;
+		UI_AddRender(&UI[InUI_Start_Delete]);
+		RenderCircle_UI();
+		//按键重新绑定
+		BOT_MIDDLE_after = BUT_Album_Delete;
+		BOT_LEFT_after = BUT_Album_Delete_MoveYes;
+		BOT_RIGHT_after = BUT_Album_Delete_MoveNo;
+	}
+	else
+	{//关闭删除确认窗口
+		window_status = 0;
+		//按键重新绑定
+		BOT_MIDDLE_after = BUT_AlbumControl;
+		BOT_LEFT_after = BUT_Album_Prior;
+		BOT_RIGHT_after = BUT_Album_Next;
+		//重新渲染图片
+		Func_TFT_Show();
+	}
+}
+void BUT_Album_Delete_MoveYes(void)
+{
+	UI[InUI_Start_Delete].value_num = 1;
+	UI_AddRender(&UI[InUI_Start_Delete]);
+	RenderCircle_UI();
+}
+void BUT_Album_Delete_MoveNo(void)
+{
+	UI[InUI_Start_Delete].value_num = 0;
+	UI_AddRender(&UI[InUI_Start_Delete]);	
+	RenderCircle_UI();
 }
 void BUT_LEDControl(void)
 {

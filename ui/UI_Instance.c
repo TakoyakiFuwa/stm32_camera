@@ -14,6 +14,7 @@ extern qy_ui		UI[200];
 extern qy_page		PAGE[8];
 
 extern uint16_t pic_num;
+extern int16_t  pic_index_index;
 
 /*  页面初始化函数格式  */
 uint8_t PageInit_XXXX(void);
@@ -34,17 +35,22 @@ void Render_Fix_SunRain(qy_ui* u)
 void Render_Fix_QY(qy_ui* u)
 {
 	TFT_SetRotation(DEF_TFT_ROTAUI);
-	UIR_ShowString(u->x,u->y,"QY@qq2060653830",15,u->InFT,u->ft_color,u->bk_color);
+	UIR_ShowString(u->x,u->y,"qq@2060653830",13,u->InFT,u->ft_color,u->bk_color);
 	TFT_SetRotation(DEF_TFT_ROTA);
 }
 void Render_Fix_LED(qy_ui* u)
 {
-	UIR_PutChar(u->x,u->y,u->InFT,' ',u->ft_color,u->bk_color);
+//	UIR_PutChar(u->x,u->y,u->InFT,' ',u->ft_color,u->bk_color);
+	UIR_DrawRect(u->x+2 ,u->y,4,14,0xFE38);
+	UIR_DrawRect(u->x+6 ,u->y,4,14,0xF7BE);
+	UIR_DrawRect(u->x+10,u->y,4,14,0x7659);
 }
 void Render_Fix_PicNum(qy_ui* u)
 {
 	TFT_SetRotation(DEF_TFT_ROTAUI);
-	UIR_ShowNum(u->x,u->y,pic_num,3,u->InFT,u->ft_color,u->bk_color);
+	UIR_ShowNum(u->x,u->y,pic_index_index,3,u->InFT,u->ft_color,u->bk_color);
+	UIR_PutChar(u->x+24,u->y,u->InFT,'/',u->ft_color,u->bk_color);
+	UIR_ShowNum(u->x+32,u->y,pic_num-1,3,u->InFT,u->ft_color,u->bk_color);
 	TFT_SetRotation(DEF_TFT_ROTA);
 }
 void Render_Fix_Battery(qy_ui* u)
@@ -52,22 +58,22 @@ void Render_Fix_Battery(qy_ui* u)
 	uint8_t value = u->value_num/25;
 	for(int i=0;i<4;i++)
 	{
-		UIR_DrawRect(u->x+4,u->y+10*i,8,6,UI[InUI_Fix_BKGround].bk_color);
+		UIR_DrawRect(u->x+4,u->y+7*i,8,4,UI[InUI_Fix_BKGround].bk_color);
 	}
 	switch(value)
 	{
 	case 3:
-		UIR_DrawRect(u->x+4,u->y+10*0,8,6,0x2351);
+		UIR_DrawRect(u->x+4,u->y+7*0,8,4,0x2351);
 	case 2:
-		UIR_DrawRect(u->x+4,u->y+10*1,8,6,0x2351);
+		UIR_DrawRect(u->x+4,u->y+7*1,8,4,0x2351);
 	case 1:
-		UIR_DrawRect(u->x+4,u->y+10*2,8,6,0x2351);
+		UIR_DrawRect(u->x+4,u->y+7*2,8,4,0x2351);
 	case 0:
-		UIR_DrawRect(u->x+4,u->y+10*3,8,6,0x2351);
+		UIR_DrawRect(u->x+4,u->y+7*3,8,4,0x2351);
 	}
 	for(int i=0;i<4;i++)
 	{
-		UIR_DrawFrame(u->x+3,u->y+10*i,10,8,u->bk_color,2);
+		UIR_DrawFrame(u->x+3,u->y+7*i-1,10,6,u->bk_color,1);
 	}
 }
 void Render_Fix_BKGround(qy_ui* u)
@@ -101,15 +107,15 @@ uint8_t PageInit_Fix(void)
 		//背景
 	UI[InUI_Fix_Base] = UI_CreateUI(320-16,0,InFT_Consolas_1608,0xD6BA,0xD6BA,Render_Fix_Base);
 		//晴雨图标
-	UI[InUI_Fix_SunRain] = UI_CreateUI(320-16,3,InPIC_SunRain_1616,0,0,Render_Fix_SunRain);
+	UI[InUI_Fix_SunRain] = UI_CreateUI(320-16,2,InPIC_SunRain_1616,0,0,Render_Fix_SunRain);
 		//晴雨字符
-	UI[InUI_Fix_QY] = UI_CreateUI(24,0,InFT_Consolas_1608,0,UI[InUI_Fix_Base].bk_color,Render_Fix_QY);
+	UI[InUI_Fix_QY] = UI_CreateUI(20,0,InFT_Consolas_1608,0,UI[InUI_Fix_Base].bk_color,Render_Fix_QY);
 		//LED灯状态
-	UI[InUI_Fix_LED] = UI_CreateUI(320-16,148,InPIC01_LED_1616,0,UI[InUI_Fix_Base].bk_color,Render_Fix_LED);
+	UI[InUI_Fix_LED] = UI_CreateUI(320-16,129,InPIC01_LED_1616,0,UI[InUI_Fix_Base].bk_color,Render_Fix_LED);
 		//当前相片数
-	UI[InUI_Fix_PicNum] = UI_CreateUI(168,0,InFT_Consolas_1608,0,UI[InUI_Fix_Base].bk_color,Render_Fix_PicNum);
+	UI[InUI_Fix_PicNum] = UI_CreateUI(148,0,InFT_Consolas_1608,0,UI[InUI_Fix_Base].bk_color,Render_Fix_PicNum);
 		//电池电压状态
-	UI[InUI_Fix_Battery] = UI_CreateUI(320-16,198,InFT_Consolas_1608,0,TFT_RGB888To565(0xAAAAAA),Render_Fix_Battery);
+	UI[InUI_Fix_Battery] = UI_CreateUI(320-16,210,InFT_Consolas_1608,0,TFT_RGB888To565(0xAAAAAA),Render_Fix_Battery);
 	UI[InUI_Fix_Battery].value_num = 49;
 	
 	UI[InUI_Fix_BKGround] = UI_CreateUI(0,0,InFT_Consolas_1608,0,0,Render_Fix_BKGround);
@@ -172,6 +178,26 @@ void Render_Start_SDpic(qy_ui* u)
 //		vTaskDelay(1000);
 //	}
 }
+void Render_Start_Delete(qy_ui* u)
+{
+	UIR_DrawRect(u->x,u->y,60,22,u->bk_color);
+	UIR_ShowString(u->x,u->y+2,"Delete?",7,u->InFT,u->ft_color,u->bk_color);
+	UIR_DrawRect(u->x+2,u->y+21,56,1,0);
+	if(u->value_num==0)
+	{
+		UIR_DrawRect(u->x,u->y+22,30,20,u->bk_color);
+		UIR_ShowString(u->x+2,u->y+22,"YES",3,u->InFT,0,u->bk_color);
+		UIR_DrawRect(u->x+30,u->y+22,30,20,CURSOR.ptr_color[1]);
+		UIR_ShowString(u->x+34,u->y+22,"NO",2,u->InFT,CURSOR.ptr_color[0],CURSOR.ptr_color[1]);
+	}
+	else 
+	{
+		UIR_DrawRect(u->x+30,u->y+22,30,20,u->bk_color);
+		UIR_ShowString(u->x+34,u->y+22,"NO",2,u->InFT,0,u->bk_color);
+		UIR_DrawRect(u->x,u->y+22,30,20,CURSOR.ptr_color[1]);
+		UIR_ShowString(u->x+2,u->y+22,"YES",3,u->InFT,CURSOR.ptr_color[0],CURSOR.ptr_color[1]);
+	}
+}
 /**@brief  开机加载界面
   */
 uint8_t PageInit_Start(void)
@@ -184,41 +210,12 @@ uint8_t PageInit_Start(void)
 	UI[InUI_Start_SDprocess] = UI_CreateUI(10,60,InFT_Consolas_1608,0,0xFE38,Render_Start_SDprocess);
 	UI[InUI_Start_SDprocess].value_num = 1;
 	UI[InUI_Start_SDpic] = UI_CreateUI(180,10,InPIC_MuGo,0,0,Render_Start_SDpic);
+	UI[InUI_Start_Delete] = UI_CreateUI(320-20-64,5,InFT_Consolas_1608,0,UI[InUI_Fix_Base].bk_color,Render_Start_Delete);
+	UI[InUI_Start_Delete].value_num = 0;//0->NO 1->YES
 	return InUI_Fix_Cursor;
 }
 
 
-
-/*  相册界面  */
-extern int16_t album_index;
-extern int16_t album_num;
-extern const char BMP_PATH_fast[];
-void Render_Album_File(qy_ui* u)
-{
-	char path[50];
-	BMP_NumToString(album_index,path);
-	BMP_Path(BMP_PATH_fast,(uint8_t*)path,".qy");
-	TFT_SetRotation(DEF_TFT_ROTAUI);
-	UIR_ShowString(u->x,u->y,(const char*)path,11,u->InFT,u->ft_color,u->bk_color);
-	TFT_SetRotation(DEF_TFT_ROTA);
-}
-void Render_Album_Index(qy_ui* u)
-{
-	TFT_SetRotation(DEF_TFT_ROTAUI);
-	UIR_ShowNum(u->x,u->y,album_num,3,u->InFT,u->ft_color,u->bk_color);
-	TFT_SetRotation(DEF_TFT_ROTA);
-}
-/**@brief  相册界面
-  */
-uint8_t PageInit_Album(void)
-{
-	PageInit_Fix();
-		//
-	UI[InUI_Album_File] = UI_CreateUI(24,0,InFT_Consolas_1608,TFT_RGB888To565(0x909090),UI[InUI_Fix_Base].bk_color,Render_Album_File);
-	Other_StringCpy(UI[InUI_Album_File].value_space,"file_path");
-	UI[InUI_Album_Index] = UI_CreateUI(24+92,0,InFT_Consolas_1608,0,UI[InUI_Fix_Base].bk_color,Render_Album_Index);
-	return InUI_Fix_Cursor;
-}
 
 
 

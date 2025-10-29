@@ -39,6 +39,7 @@ extern qy_pointer	CURSOR;
 extern qy_ui		UI[200];
 extern qy_page		PAGE[8];
 extern int8_t SD_on;
+void Func_Pic_Index_Init(void);
 void Init_SD(void)
 {
 		//等待SD卡挂载
@@ -56,8 +57,9 @@ void Init_SD(void)
 		UI_AddRender(&UI[InUI_Start_SDprocess]);
 		RenderCircle_UI();
 		//获取已有图片的数量和ID
+		Func_Pic_Index_Init();
 			//旧图片处理
-		//BMP_Change();
+//		Func_Pic_To_BMP();
 				//待补充功能
 		UI_AddRender(&UI[InUI_Start_SDprocess]);
 		RenderCircle_UI();
@@ -68,6 +70,68 @@ void Init_SD(void)
 		UI_AddRender(&UI[InUI_Start_SDstatus]);
 		RenderCircle_UI();
 		SD_on = 0;
+	}
+}
+extern uint16_t pic_index[];		//保存在SD卡中的文件名
+extern int16_t  pic_index_index;	//(笑)index的index
+extern uint16_t pic_num;			//总数量
+extern const char BMP_PATH_fast[];
+void Func_Pic_Index_Init(void)
+{
+	if(SD_on!=1)
+	{
+		return;
+	}
+	DIR dp;
+	FILINFO info;
+	f_opendir(&dp,BMP_PATH_fast);
+	f_readdir(&dp,&info);
+	pic_index_index = 0;
+	pic_index[0] = 0;
+	while(info.fname[0]!='\0')
+	{
+		pic_index[pic_index_index++] = BMP_StringToNum(info.fname);
+		f_readdir(&dp,&info);
+	}
+	pic_index[pic_index_index] = 999;
+	f_closedir(&dp);
+	pic_num = pic_index_index;//总数量
+	// :) C语言基础，手写数组排序
+	uint16_t temp = 0;
+	for(int i=0;i<pic_index_index;i++)
+	{
+		for(int j=pic_index_index;j>i;j--)
+		{
+			if(pic_index[j]<pic_index[j-1])
+			{
+				temp = pic_index[j];
+				pic_index[j] = pic_index[j-1];
+				pic_index[j-1] = temp;
+			}
+		}
+	}
+//	for(int i=0;i<=pic_index_index;i++)
+//	{
+//		U_Printf("[%d]->%d \r\n",i,pic_index[i]);
+//	}
+}
+#include "ButtonFunc.h"
+extern const char BMP_PATH_bmp[];
+extern const char BMP_PATH_fast[];
+void Func_Pic_To_BMP(void)
+{
+	//:)
+	//我突然感觉边拍边保存成BMP格式也不错....
+	char path[50];
+	for(int i=1;i<pic_index_index;i++)
+	{
+		//读出数据
+		BMP_NumToString(pic_index[i],path);
+		SD_Fast_Read(path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
+		//制作BMP
+		BMP_NumToString(pic_index[i],path);
+		BMP_Write_ByData(path,(uint16_t*)&camera_data[1],DEF_PIC_WIDTH,DEF_PIC_HEIGHT);
+		U_Printf("%d.bmp处理完成 \r\n",pic_index[i]);
 	}
 }
 /*  ？？？写的好乱好乱....又要烂尾了...  */

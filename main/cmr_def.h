@@ -10,7 +10,7 @@
 #define DEF_OV_Y		10
 /*  宽度/高度  */
 #define DEF_PIC_WIDTH	304
-#define DEF_PIC_HEIGHT	165		//建议是3的倍数，参考Task_Camera->屏幕显示部分
+#define DEF_PIC_HEIGHT	240		//建议是3的倍数，参考Task_Camera->屏幕显示部分
 /*  屏幕旋转配置  */
 #define DEF_TFT_ROTA 	0x70	//YXV0 0000	//配置0xC0时 数字在侧面显示
 #define DEF_TFT_ROTAUI	0xC0

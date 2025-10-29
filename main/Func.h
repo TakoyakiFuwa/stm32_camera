@@ -7,6 +7,8 @@
 void Init_SD(void);
 void Init_Func(void);
 void Task_Func(void* pvParameters);
+void Func_Pic_Index_Init(void);
+void Func_Pic_To_BMP(void);
 void Init_Light(void);
 void Cmd_Func(void);
 void Func_TFT_Show(void);

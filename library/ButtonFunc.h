@@ -9,6 +9,9 @@ void BUT_AlbumControl(void);
 void BUT_Album_Next(void);
 void BUT_Album_Prior(void);
 void BUT_Album_Delete(void);
+void BUT_Album_DeleteWindow(void);
+void BUT_Album_Delete_MoveNo(void);
+void BUT_Album_Delete_MoveYes(void);
 void BUT_LEDControl(void);
 
 #endif

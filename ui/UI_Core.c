@@ -50,14 +50,6 @@ static uint8_t Init_PAGE(void)
 //			InUI_Start_SDstatus,InUI_Start_SDpic,InUI_Start_SDprocess
 		};
 	UI_CreatePage(&PAGE[InPG_Start],page_UI_Index_Start,sizeof(page_UI_Index_Start)/sizeof(uint8_t),PageInit_Start);
-	//相册界面
-	uint8_t page_UI_Index_Album[] = {
-			InUI_Fix_Base,InUI_Fix_Battery,InUI_Fix_Cursor,InUI_Fix_LED,
-			InUI_Fix_PicNum,InUI_Fix_SunRain
-			//
-			,InUI_Album_File,InUI_Album_Index
-		};
-	UI_CreatePage(&PAGE[InPG_Album],page_UI_Index_Album,sizeof(page_UI_Index_Album)/sizeof(uint8_t),PageInit_Album);
 	
 	
 	//返回第一个进入的页面

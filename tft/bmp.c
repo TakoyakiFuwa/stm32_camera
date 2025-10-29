@@ -379,14 +379,14 @@ void BMP_Write_ByData(const char* file_name,uint16_t* data,uint16_t width,uint16
 	}
 	uint8_t rgb888[3];
 	uint32_t rgb565 = 0;
-	for(int i=0;i<width*height;i++)
+	for(int i=width*height;i>=1;i--)
 	{
 		rgb565 = data[i];
 		//rgb565  ---- ---- rrrr rggg gggb bbbb
 		//rgb888  rrrr r--- gggg gg-- bbbb b---
-		rgb888[0] = ((rgb565&0xF800)>>8);
+		rgb888[2] = ((rgb565&0xF800)>>8);
 		rgb888[1] = ((rgb565&0x7E0)>>3);
-		rgb888[2] = ((rgb565&0x1F)<<3);
+		rgb888[0] = ((rgb565&0x1F)<<3);
 		f_write(&fp,rgb888,sizeof(uint8_t)*3,0);
 	}
 	//关闭文件

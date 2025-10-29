@@ -9,15 +9,17 @@
 #include "ButtonFunc.h"
 
 #define DEF_BOTTON_LONG		100
-void (*BOT_LEFT_before)(void);
 void (*BOT_LEFT_long)(void);
 void (*BOT_LEFT_after)(void);
-void (*BOT_MIDDLE_before)(void);
 void (*BOT_MIDDLE_long)(void);
 void (*BOT_MIDDLE_after)(void);
-void (*BOT_RIGHT_before)(void);
 void (*BOT_RIGHT_long)(void);
 void (*BOT_RIGHT_after)(void);
+
+//...这个before的按键判定好像和long判定冲突...(?) 不打算用了...
+void (*BOT_LEFT_before)(void);
+void (*BOT_MIDDLE_before)(void);
+void (*BOT_RIGHT_before)(void);
 
 /**@brief  按键初始化
   */
@@ -66,6 +68,8 @@ void Task_Botton(void* pvParameters)
 				}
 			}
 			vTaskDelay(12);
+			if(botton_long_judge>=DEF_BOTTON_LONG)//1s
+			{continue;}
 			BOT_LEFT_after();
 		}
 		if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)==Bit_RESET)
@@ -81,6 +85,8 @@ void Task_Botton(void* pvParameters)
 				}
 			}
 			vTaskDelay(12);
+			if(botton_long_judge>=DEF_BOTTON_LONG)//1s
+			{continue;}
 			BOT_MIDDLE_after();
 		}
 		if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_8)==Bit_RESET)
@@ -96,6 +102,8 @@ void Task_Botton(void* pvParameters)
 				}
 			}
 			vTaskDelay(12);
+			if(botton_long_judge>=DEF_BOTTON_LONG)//1s
+			{continue;}
 			BOT_RIGHT_after();
 		}
 		botton_long_judge = 0;
