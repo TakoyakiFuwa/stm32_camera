@@ -34,6 +34,7 @@ extern int8_t camera_on;
 extern const char BMP_PATH_bmp[];
 extern const char BMP_PATH_fast[]; 
 /*  Botton.c  */
+extern int8_t botton_islong;
 extern void (*BOT_LEFT_long)(void);
 extern void (*BOT_LEFT_after)(void);
 extern void (*BOT_MIDDLE_long)(void);
@@ -90,6 +91,7 @@ uint16_t BUT_FindMaxNum(const char* path,uint16_t* total_num)
 	return max_num;
 }
 #include "TFT_ST7789V.h"
+#include "Func.h"
 void BUT_KeepPhoto(void)
 {
 	//关闭摄影功能
@@ -126,6 +128,8 @@ void BUT_KeepPhoto(void)
 	uint8_t path[6];
 	BMP_NumToString(pic_index[pic_index_index-1],(char*)path);
 	SD_Fast_Write((const char*)path,(uint16_t*)&camera_data[0],DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
+		//制作BMP
+	Func_Pic_ToBMP_OnePhoto();
 	//继续摄影功能
 	camera_on = 1;
 }
@@ -162,6 +166,8 @@ void BUT_AlbumControl(void)
 		BOT_RIGHT_after = BUT_Album_Next;
 		BOT_LEFT_after = BUT_Album_Prior;
 		BOT_MIDDLE_long = BUT_Album_DeleteWindow;
+		BOT_RIGHT_long = BUT_Album_NextNextNext;
+		BOT_LEFT_long = BUT_Album_PriorPriorPrior;
 		//显示第一张图片
 		pic_index_index--;
 		char path[6];
@@ -177,6 +183,9 @@ void BUT_AlbumControl(void)
 		BOT_RIGHT_after = BUT_KeepPhoto;
 		BOT_MIDDLE_long = Botton_Func_Null;
 		BOT_LEFT_after = Botton_Func_Null;
+		BOT_RIGHT_long = BUT_Album_NextNextNext;
+		BOT_LEFT_long = Botton_Func_Null;
+		BOT_RIGHT_long = Botton_Func_Null;
 		//重新渲染侧边栏
 		pic_index_index = pic_num;
 		UI_AddRender(&UI[InUI_Fix_PicNum]);
@@ -215,6 +224,18 @@ void BUT_Album_Prior(void)
 	UI_AddRender(&UI[InUI_Fix_PicNum]);
 	RenderCircle_UI();
 	Func_TFT_Show();
+}
+void BUT_Album_NextNextNext(void)
+{
+	BUT_Album_Next();
+	vTaskDelay(400);
+	botton_islong = 1;
+}
+void BUT_Album_PriorPriorPrior(void)
+{
+	BUT_Album_Prior();
+	vTaskDelay(400);
+	botton_islong = 1;
 }
 void BUT_Album_Delete(void)
 {

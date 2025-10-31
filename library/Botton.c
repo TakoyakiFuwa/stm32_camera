@@ -9,6 +9,7 @@
 #include "ButtonFunc.h"
 
 #define DEF_BOTTON_LONG		100
+int8_t	botton_islong = 1;
 void (*BOT_LEFT_long)(void);
 void (*BOT_LEFT_after)(void);
 void (*BOT_MIDDLE_long)(void);
@@ -62,14 +63,15 @@ void Task_Botton(void* pvParameters)
 			while(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10)==Bit_RESET)
 			{
 				vTaskDelay(10);
-				if(botton_long_judge++==DEF_BOTTON_LONG)//1s
+				if(botton_long_judge++>=DEF_BOTTON_LONG && botton_islong==1)//1s
 				{//长判定处理
+					botton_islong = 0;
 					BOT_LEFT_long();
 				}
 			}
 			vTaskDelay(12);
 			if(botton_long_judge>=DEF_BOTTON_LONG)//1s
-			{continue;}
+			{botton_islong=1;continue;}
 			BOT_LEFT_after();
 		}
 		if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)==Bit_RESET)
@@ -79,14 +81,15 @@ void Task_Botton(void* pvParameters)
 			while(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)==Bit_RESET)
 			{
 				vTaskDelay(10);
-				if(botton_long_judge++==DEF_BOTTON_LONG)//1s
+				if(botton_long_judge++>=DEF_BOTTON_LONG && botton_islong==1)//1s
 				{//长判定处理
+					botton_islong = 0;
 					BOT_MIDDLE_long();
 				}
 			}
 			vTaskDelay(12);
 			if(botton_long_judge>=DEF_BOTTON_LONG)//1s
-			{continue;}
+			{botton_islong=1;continue;}
 			BOT_MIDDLE_after();
 		}
 		if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_8)==Bit_RESET)
@@ -96,14 +99,15 @@ void Task_Botton(void* pvParameters)
 			while(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_8)==Bit_RESET)
 			{
 				vTaskDelay(10);
-				if(botton_long_judge++==DEF_BOTTON_LONG)//1s
+				if(botton_long_judge++>=DEF_BOTTON_LONG && botton_islong==1)//1s
 				{//长判定处理
+					botton_islong = 0;
 					BOT_RIGHT_long();
 				}
 			}
 			vTaskDelay(12);
 			if(botton_long_judge>=DEF_BOTTON_LONG)//1s
-			{continue;}
+			{botton_islong=1;continue;}
 			BOT_RIGHT_after();
 		}
 		botton_long_judge = 0;

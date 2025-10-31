@@ -12,6 +12,7 @@ void Func_Pic_To_BMP(void);
 void Init_Light(void);
 void Cmd_Func(void);
 void Func_TFT_Show(void);
+void Func_Pic_ToBMP_OnePhoto(void);
 void Task_Camera(void* pvParameters);
 void Task_UI(void* pvParameters);
 void Task_GetADC(void* pvParameters);

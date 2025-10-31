@@ -38,6 +38,7 @@ int8_t SD_on = 1;
 //存储位置相关
 const char BMP_PATH_bmp[] 	= {"0:/cmr/"};
 const char BMP_PATH_fast[] 	= {"0:/f/"};
+const char BMP_PATH_RGB565[] = {"0:/rgb565/"};
 //图片处理相关（ButtonFunc.c）
 uint16_t pic_index[500];		//保存在SD卡中的文件名
 int16_t  pic_index_index = 0;	//(笑)index的index
@@ -80,8 +81,8 @@ void Main_Start(void* pvParameters)
 		//进入临界区
 	taskENTER_CRITICAL();
 		//Func测试
-	xTaskCreate(Task_Botton,"Botton",256+128,NULL,5,NULL);
-	xTaskCreate(Task_UI,"UI",256,NULL,7,NULL);
+	xTaskCreate(Task_Botton,"Botton",512,NULL,5,NULL);
+	xTaskCreate(Task_UI,"UI",128,NULL,7,NULL);
 //	xTaskCreate(Task_GetADC,"ADC",256,NULL,5,NULL);
 	xTaskCreate(Task_Camera,"Camera",128,NULL,8,NULL);
 	
@@ -113,37 +114,20 @@ int8_t Cmd(void)
 	}
 	else if(Command("BMP"))
 	{
-		camera_on = 0;
-		Cmd_BMP();
-		camera_on = 1;
-	}
-	else if(Command("SNAP"))
-	{
-		camera_on = 0;
-		U_Printf("尝试写入(?) \r\n");
-		BMP_Write_ByData("aaa",(uint16_t*)&camera_data[1],300,200);
-		Cmd_BMP();
-//		camera_on = 1;
-	}
-	else if(Command("FAST_W"))
-	{
-		camera_on = 0;
-		U_Printf("快速读写测试 \r\n");
-		SD_Fast_Write("fast",(uint16_t*)&camera_data[0],300*200);
-		camera_on = 1;
-	}
-	else if(Command("FAST_R"))
-	{
-		camera_on = 0;
-		U_Printf("快速读测试 \r\n");
-		SD_Fast_Read("fast",(uint16_t*)&camera_data[0],300*200);
-		//屏幕显示
-		TFT_SetCursor(0,0,300,100);
-		TFT_DMA_SetAddr(&camera_data[0]);
-		TFT_DMA_Send(300*100*2);
-		TFT_SetCursor(0,100,300,100);
-		TFT_DMA_SetAddr(&camera_data[300*100*2]);
-		TFT_DMA_Send(300*100*2);
+		if(camera_on==0)
+		{
+			camera_on = 1;
+		}
+		else
+		{
+			camera_on = 0;
+			char path[50];
+			BMP_NumToString(pic_index[pic_index_index-1],path);
+			uint16_t a,b;
+			BMP_Read_ByData(path,(uint16_t*)&camera_data[1],&a,&b,DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
+			Func_TFT_Show();
+			U_Printf("[%d,%d] \r\n",a,b);
+		}
 	}
 	else if(Command("a"))
 	{
@@ -165,10 +149,10 @@ int8_t Cmd(void)
 		U_Printf("A! \r\n");
 		CURSOR.ui->Func_Event_UP(CURSOR.ui);
 	}
-	else if(Command("S"))
-	{
-		U_Printf("S! \r\n");
-	}
+//	else if(Command("S"))
+//	{
+//		U_Printf("S! \r\n");
+//	}
 	else if(Command("D"))
 	{
 		U_Printf("D! \r\n");

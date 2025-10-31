@@ -23,6 +23,7 @@
 
 extern const char BMP_PATH_bmp[];
 extern const char BMP_PATH_fast[];
+extern const char BMP_PATH_RGB565[];
 
 FATFS fs;
 typedef struct{
@@ -238,8 +239,9 @@ void BMP_Read_ByData(const char* file_name,uint16_t* data,uint16_t* width,uint16
 {
 	FIL fp;
 	uint32_t data_offset;
+	uint16_t _width,_height;
 	//预处理
-	if(BMP_Read_ForeProcess(file_name,&fp,width,height,&data_offset)==0)
+	if(BMP_Read_ForeProcess(file_name,&fp,&_width,&_height,&data_offset)==0)
 	{//处理异常
 		return;
 	}
@@ -247,18 +249,22 @@ void BMP_Read_ByData(const char* file_name,uint16_t* data,uint16_t* width,uint16
 	f_lseek(&fp,data_offset);
 	uint32_t rgb888;
 	uint16_t rgb565;
-	uint32_t size = (*width)*(*height);
+	uint32_t size = (_width*_height);
 	uint32_t circle_count = (max_length>size?size:max_length);
 	for(uint32_t i=0;i<circle_count;i++)
 	{
 		//rgb565  ---- ---- rrrr rggg gggb bbbb
 		//rgb888  rrrr r--- gggg gg-- bbbb b---
 		f_read(&fp,(void*)&rgb888,sizeof(uint8_t)*3,0);
-		rgb565 = ((rgb888&0xF80000)>>8);
-		rgb565 |= ((rgb888&0xFC00)>>5);
-		rgb565 |= ((rgb888&0xF8)>>3);
+		rgb565  = ((rgb888&0xF80000)>>8);
+		rgb565 |= ((rgb888&0x00FC00)>>5);
+		rgb565 |= ((rgb888&0x0000F8)>>3);
 		data[i] = rgb565;
 	}
+	if(width!=0)
+	{*width = _width;}
+	if(height!=0)
+	{*height = _height;}
 	//关闭文件
 	f_close(&fp);
 }
@@ -298,7 +304,7 @@ void BMP_Read_ByData(const char* file_name,uint16_t* data,uint16_t* width,uint16
   *@add	   文件头只是适配....
   *		   在f429板子上的相机项目(即320*240-qvga)尺寸的bmp
   */
-static int8_t BMP_Write_ForeProcess(const char* file_name,FIL* fp,uint16_t width,uint16_t height)
+int8_t BMP_Write_ForeProcess(const char* file_name,FIL* fp,uint16_t width,uint16_t height)
 {
 	//路径处理
 	uint8_t path[50];
@@ -457,6 +463,108 @@ int8_t SD_Fast_Read(const char* file_name,uint16_t* data,uint32_t length)
 	f_close(&fp);
 	return 1;
 }
+
+/*  制作16位RGB565的BMP图片  */
+/*	相机版子最晚这个周末要结项，准备整理代码或者优化性能了...
+ *	现在来处理噪点问题...
+ *	(来给bmp库打补丁)
+ *	....不过这个BMP库太臃肿....可能要废弃了...
+ *		——2025/10/31-15:05.秦羽
+ */
+
+void BMP_WriteRGB565_Data(uint16_t file_name,void* data,uint16_t width,uint16_t height)
+{
+	FIL fp;
+	//预处理 这里是以rgb565的文件头
+		//路径处理
+	uint8_t path[50];
+	BMP_NumToString(file_name,(char*)path);
+	BMP_Path(BMP_PATH_RGB565,path,".bmp");
+		//打开文件
+	if(f_open(&fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE)!=FR_OK)
+	{
+		U_Printf("打开文件[%s]失败，代码:%d \r\n",file_name,f_open(&fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE));
+		return;
+	}
+		//写入文件头
+	uint32_t data_dword = 0;
+	uint16_t data_word = 0;
+		//bmp文件标志:0x4D42
+	data_word = 0x4D42;
+	f_write(&fp,&data_word,sizeof(uint16_t),0);
+		//文件大小
+	data_dword = width*height*2+138;//0x8A = 138
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//保留位(0):0 
+	data_dword = 0;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//数据偏移位置:0x8A 
+	data_dword = 0x8A;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//信息头长度:124 
+	data_dword = 124;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//位图宽度:320px	位图高度:240px 
+	data_dword = width;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+	data_dword = height;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//位面数(1):1 
+	data_word = 1;
+	f_write(&fp,&data_word,sizeof(uint16_t),0);
+		//像素位数:24 
+	data_word = 16;
+	f_write(&fp,&data_word,sizeof(uint16_t),0);
+		//压缩方式:3 ->像素读掩码
+	data_dword = 3;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//位图数据大小:
+	data_dword = width*height*2;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//水平分辨率:0px	垂直分辨率:0px 
+	data_dword = 0;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+	data_dword = 0;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//用到的颜色数:0 
+	data_dword = 0;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//重要颜色数:0 
+	data_dword = 0;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//RedMask = 0xF800
+	data_dword = 0xF800;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//GreenMask = 0x07E0
+	data_dword = 0x07E0;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//BlueMask = 0x001F
+	data_dword = 0x001F;
+	f_write(&fp,&data_dword,sizeof(uint32_t),0);
+		//移动到可以写入像素的地方
+	f_lseek(&fp,0x8A);
+	
+	//写入数据
+	uint32_t total_size = width*height*2;
+	uint32_t temp_size = 0;
+	uint32_t count_size = 0;
+	while(count_size<total_size)
+	{
+		f_write(&fp,(const void*)data,total_size,&temp_size);
+		count_size+=temp_size;
+		U_Printf("[BMP_WriteRGB565_Data-%s]:写入[%d / %d] \r\n",path,count_size,total_size);
+	}
+	
+	//关闭文件
+	f_close(&fp);
+	
+}
+
+void BMP_ReadRGB565_Data(uint16_t file_name,uint16_t* data,uint16_t width,uint16_t height)
+{
+	
+}
+
 #include "TFT_ST7789V.h"
 void Cmd_BMP(void)
 {	
