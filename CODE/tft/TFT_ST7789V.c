@@ -18,7 +18,7 @@
  */
 
 /*  移植配置区域  */
-/*	当前在处理F4_UI板子
+/*	当前配置为Camera的2.4寸屏幕
  *	PD14	(3)		-> GND
  *	PD13	(4)		-> VCC
  *	PD12	(5)		-> GND
@@ -32,7 +32,7 @@
  */
 /*  见cmr_def.h  */
 #include "cmr_def.h"
-//#define TFT_ROTATION 0x60	//YXV0 0000
+#define def_TFT_ROTATION DEF_TFT_ROTA
 /*	方向为: （适合f4_ui的OV7670方向输出）
  *		+-——-——-——-——>
  *		|			 x	
@@ -45,8 +45,6 @@
 
 
 /*  需要修改的接口  */
-
-
 /*  SPI通讯处理  */
 	//片选线
 #define TFT_SPI_CS_L()		GPIOB->BSRRH = GPIO_Pin_12
@@ -335,7 +333,7 @@ static void TFT_SoftwareInit(void)
     vTaskDelay(120);         //Delay 120ms 
 
     TFT_WriteCmd(0x36); 
-    TFT_WriteData(DEF_TFT_ROTA); //a0：横屏，00:竖屏，60：横屏镜像
+    TFT_WriteData(def_TFT_ROTATION); //a0：横屏，00:竖屏，60：横屏镜像
     TFT_WriteCmd(0x3a); 
     TFT_WriteData(0x05); 
 

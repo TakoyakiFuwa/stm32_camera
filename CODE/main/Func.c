@@ -136,29 +136,6 @@ void Func_Pic_To_BMP(void)
 }
 void Func_Pic_ToBMP_OnePhoto(void)
 {
-	uint32_t MAX = DEF_PIC_WIDTH*DEF_PIC_HEIGHT*2;
-	uint16_t temp_data = 0;
-	//左右反转
-	uint16_t* data = (uint16_t*)&camera_data[0];
-	uint32_t index_line = 0;
-	for(uint32_t i=0;i<DEF_PIC_HEIGHT;i++)
-	{
-		index_line = DEF_PIC_WIDTH*i;
-		for(uint32_t j=0;j<DEF_PIC_WIDTH/2;j++)
-		{
-			//index_line+j 和 index_line+DEF_PIC_HEIGHT-j
-			temp_data = data[index_line+j];
-			data[index_line+j] = data[index_line+DEF_PIC_WIDTH-j];
-			data[index_line+DEF_PIC_WIDTH-j] = temp_data;
-		}
-	}
-	//像素反转->以适应bmp文件
-	for(uint32_t i=0;i<MAX/2;i++)
-	{
-		temp_data = camera_data[i];
-		camera_data[i] = camera_data[MAX-1-i];
-		camera_data[MAX-1-i] = temp_data;
-	}
 	BMP_WriteRGB565_Data(pic_index[pic_index_index-1],(void*)&camera_data[2],DEF_PIC_WIDTH,DEF_PIC_HEIGHT);
 	U_Printf("Func_Pic_ToBMP_OnePhoto:[%d] \r\n",pic_index[pic_index_index-1]);
 }
@@ -194,11 +171,21 @@ void Init_Func(void)
 }
 /**@brief  Func线程示例
   */
+#include "UI_Render.h"
 void Task_Func(void* pvParameters)
 {
+	uint8_t num = 0;
+	uint8_t num_a = 0;
 	while(1)
 	{
-		vTaskDelay(200);
+		UIR_ShowNum(100,20,num++,3,InFT_Consolas_3216,0x2200,0xF0FF);
+		UIR_ShowNum(100+16*4,20,num_a,3,InFT_Consolas_3216,0x2200,0xF0FF);
+		if(num>=60)
+		{
+			num = 0;
+			num_a++;
+		}
+		vTaskDelay(1000);
 	}
 }
 /**@brief  LED初始化

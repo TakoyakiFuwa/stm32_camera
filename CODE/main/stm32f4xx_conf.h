@@ -59,7 +59,7 @@
 #include "stm32f4xx_dac.h"
 #include "stm32f4xx_dcmi.h"
 #include "stm32f4xx_dma2d.h"
-#include "stm32f4xx_fmc.h"
+//#include "stm32f4xx_fmc.h"
 #include "stm32f4xx_ltdc.h"
 #include "stm32f4xx_sai.h"
 #endif /* STM32F429_439xx || STM32F446xx || STM32F469_479xx */
@@ -83,7 +83,7 @@
 #include "stm32f4xx_can.h"
 #include "stm32f4xx_dac.h"
 #include "stm32f4xx_dcmi.h"
-#include "stm32f4xx_fsmc.h"
+//#include "stm32f4xx_fsmc.h"
 #endif /* STM32F40_41xxx */
 
 #if defined(STM32F410xx)

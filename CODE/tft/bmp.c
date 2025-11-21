@@ -25,6 +25,12 @@ extern const char BMP_PATH_bmp[];
 extern const char BMP_PATH_fast[];
 extern const char BMP_PATH_RGB565[];
 
+/*  路径配置  */
+#define def_PATH_BMP		BMP_PATH_bmp
+#define def_PATH_Fast 		BMP_PATH_fast
+#define def_PATH_RGB565		BMP_PATH_RGB565
+
+
 FATFS fs;
 typedef struct{
 	uint16_t bmp_sign;		//00 文件标识
@@ -56,9 +62,9 @@ int8_t Init_BMP(void)
 		U_Printf("SD卡初始化异常,代码:%d \r\n",f_mount(&fs,"0:",1));
 		return f_mount(&fs,"0:",1);
 	}
-	else if(f_opendir(&dp,BMP_PATH_bmp)!=FR_OK)
+	else if(f_opendir(&dp,def_PATH_BMP)!=FR_OK)
 	{
-		U_Printf("未检测到文件夹[%s]位置,请创建文件夹后重试 \r\n",&BMP_PATH_bmp[3]);
+		U_Printf("未检测到文件夹[%s]位置,请创建文件夹后重试 \r\n",&def_PATH_BMP[3]);
 	}
 	else
 	{
@@ -213,7 +219,7 @@ static int8_t BMP_Read_ForeProcess(const char* file_name,FIL* fp,uint16_t* width
 		path[i] = file_name[i];
 		path[i+1] = '\0';
 	}
-	BMP_Path(BMP_PATH_bmp,path,".bmp");
+	BMP_Path(def_PATH_BMP,path,".bmp");
 	//打开文件
 	if(f_open(fp,(const TCHAR*)path,FA_READ)!=FR_OK)
 	{
@@ -268,39 +274,7 @@ void BMP_Read_ByData(const char* file_name,uint16_t* data,uint16_t* width,uint16
 	//关闭文件
 	f_close(&fp);
 }
-///**@brief  通过函数处理数据
-//  *@param  file_name	仅名字，不需要前缀和尾缀
-//  *@param  void(*Func)(uint16_t)	rgb565像素处理函数,uint16_t->rgb565像素
-//  *@retval void
-//  */
-//void BMP_Read_ByFunc(const char* file_name,void(*Func)(uint16_t))
-//{
-//	FIL fp;
-//	uint32_t data_offset,width,height;
-//	//预处理
-//	if(BMP_Read_ForeProcess(file_name,&fp,&width,&height,&data_offset)==0)
-//	{//处理异常
-//		return;
-//	}
-//	//获取数据
-//	f_lseek(&fp,data_offset);
-//	uint32_t rgb888;
-//	uint16_t rgb565;
-//	for(uint32_t i=0;i<width*height;i++)
-//	{
-//		//rgb565  ---- ---- rrrr rggg gggb bbbb
-//		//rgb888  rrrr r--- gggg gg-- bbbb b---
-//		f_read(&fp,(void*)&rgb888,sizeof(uint8_t)*3,0);
-//		rgb565 = ((rgb888&0xF80000)>>8);
-//		rgb565 |= ((rgb888&0xFC00)>>5);
-//		rgb565 |= ((rgb888&0xF8)>>3);
-//		Func(rgb565);
-//	}
-//	//关闭文件
-//	f_close(&fp);
-//}
-/**
-  *@retval int8_t
+/**@retval int8_t
   *@add	   文件头只是适配....
   *		   在f429板子上的相机项目(即320*240-qvga)尺寸的bmp
   */
@@ -313,7 +287,7 @@ int8_t BMP_Write_ForeProcess(const char* file_name,FIL* fp,uint16_t width,uint16
 		path[i] = file_name[i];
 		path[i+1] = '\0';
 	}
-	BMP_Path(BMP_PATH_bmp,path,".bmp");
+	BMP_Path(def_PATH_BMP,path,".bmp");
 	//打开文件
 	if(f_open(fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE)!=FR_OK)
 	{
@@ -415,7 +389,7 @@ void SD_Fast_Write(const char* file_name,uint16_t* data,uint32_t length)
 		path[i] = file_name[i];
 	}
 	path[i] = '\0';
-	BMP_Path(BMP_PATH_fast,path,".qy");
+	BMP_Path(def_PATH_Fast,path,".qy");
 	//创建文件
 	FIL fp;
 	if(f_open(&fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE)!=FR_OK)
@@ -447,7 +421,7 @@ int8_t SD_Fast_Read(const char* file_name,uint16_t* data,uint32_t length)
 		path[i] = file_name[i];
 	}
 	path[i] = '\0';
-	BMP_Path(BMP_PATH_fast,path,".qy");
+	BMP_Path(def_PATH_Fast,path,".qy");
 	//创建文件
 	FIL fp;
 	if(f_open(&fp,(const TCHAR*)path,FA_READ)!=FR_OK)
@@ -472,18 +446,57 @@ int8_t SD_Fast_Read(const char* file_name,uint16_t* data,uint32_t length)
  *		——2025/10/31-15:05.秦羽
  */
 
-void BMP_WriteRGB565_Data(uint16_t file_name,void* data,uint16_t width,uint16_t height)
+/**@brief  为适应RGB565格式BMP做出调整
+  *@param  width/height 像素尺寸
+  *@param  data 		要修改的数据
+  *@retval void
+  */
+static void BMP_RGB565Fix(uint16_t width,uint16_t height,uint16_t* data)
+{
+	uint32_t MAX = width*height*2;
+	uint16_t temp_data = 0;
+	//左右反转
+	uint32_t index_line = 0;
+	for(uint32_t i=0;i<height;i++)
+	{
+		index_line = width*i;
+		for(uint32_t j=0;j<width/2;j++)
+		{
+			//index_line+j 和 index_line+DEF_PIC_HEIGHT-j
+			temp_data = data[index_line+j];
+			data[index_line+j] = data[index_line+width-j];
+			data[index_line+width-j] = temp_data;
+		}
+	}
+	//像素反转->以适应bmp文件
+	uint8_t* _data = (uint8_t*)&data[0];
+	for(uint32_t i=0;i<MAX/2;i++)
+	{
+		temp_data = _data[i];
+		_data[i] = _data[MAX-1-i];
+		_data[MAX-1-i] = temp_data;
+	}
+}
+/**@brief  以RGB565的格式存储文件
+  *@param  file_index	数字，文件会例如以"1.bmp"的名字保存
+  *@param  data			数据数组
+  *@param  width/height	文件尺寸
+  *@retval void
+  */
+void BMP_WriteRGB565_Data(uint16_t file_index,uint16_t* data,uint16_t width,uint16_t height)
 {
 	FIL fp;
+	//数据预处理，因为写入方式的问题(?)
+	BMP_RGB565Fix(width,height,data);
 	//预处理 这里是以rgb565的文件头
 		//路径处理
 	uint8_t path[50];
-	BMP_NumToString(file_name,(char*)path);
-	BMP_Path(BMP_PATH_RGB565,path,".bmp");
+	BMP_NumToString(file_index,(char*)path);
+	BMP_Path(def_PATH_RGB565,path,".bmp");
 		//打开文件
 	if(f_open(&fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE)!=FR_OK)
 	{
-		U_Printf("打开文件[%s]失败，代码:%d \r\n",file_name,f_open(&fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE));
+		U_Printf("打开文件[%d]失败，代码:%d \r\n",file_index,f_open(&fp,(const TCHAR*)path,FA_CREATE_ALWAYS|FA_WRITE));
 		return;
 	}
 		//写入文件头
@@ -560,7 +573,7 @@ void BMP_WriteRGB565_Data(uint16_t file_name,void* data,uint16_t width,uint16_t 
 	
 }
 
-void BMP_ReadRGB565_Data(uint16_t file_name,uint16_t* data,uint16_t width,uint16_t height)
+void BMP_ReadRGB565_Data(uint16_t file_index,uint16_t* data,uint16_t width,uint16_t height)
 {
 	
 }
@@ -570,7 +583,7 @@ void Cmd_BMP(void)
 {	
 	FIL fp;
 	TCHAR path[50] = "index";
-	BMP_Path(BMP_PATH_bmp,(uint8_t*)path,".qy");
+	BMP_Path(def_PATH_BMP,(uint8_t*)path,".qy");
 	if(f_open(&fp,path,FA_OPEN_APPEND|FA_WRITE)!=FR_OK)
 	{
 		U_Printf("文件追加打开失败，尝试创建 \r\n");

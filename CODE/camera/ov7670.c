@@ -24,7 +24,7 @@
  *	然后会有更多贴贴会被喜欢更多吧....(?)
  *		2025/9/26-19:30.秦羽
  */
-/*	这里是f4_ui板上的相机接口测试
+/*	这里是camera板上的相机接口测试
  *	PD5		->	VCC
  *	PD12	->	SCL		//摄像头在上升沿读取
  *	PB8		->	VS
@@ -45,10 +45,10 @@
  *	PD4		->	GND
  */
 //输出尺寸
-#define OV_Output_width 	DEF_PIC_WIDTH		//最高好像是314 且会有黑边
-#define OV_Output_height	DEF_PIC_HEIGHT		//最高248 达到240标准
-//数据存放地址
-extern uint8_t camera_data[];
+#define def_OV_X		DEF_OV_X
+#define def_OV_Y		DEF_OV_Y
+#define def_OV_Width 	DEF_PIC_WIDTH		//最高好像是314 且会有黑边
+#define def_OV_Height	DEF_PIC_HEIGHT		//最高248 达到240标准
 //SCL
 #define OV_SCL(x)	GPIO_WriteBit(GPIOD,GPIO_Pin_12,(BitAction)x);for(int i=0;i<100;i++);
 //SDA
@@ -337,7 +337,7 @@ void Init_OV(uint32_t* data_addr)
 		//软件初始化
 	OV_SoftwareInit();
 		//设置窗口位置152,0,-,-
-	OV_config_window(DEF_OV_X,DEF_OV_Y,OV_Output_width,OV_Output_height);
+	OV_config_window(def_OV_X,def_OV_Y,def_OV_Width,def_OV_Height);
 	vTaskDelay(100);
 		//开启DCMI外设
 	OV_DCMI_Init(data_addr);
@@ -352,7 +352,7 @@ void Init_OV(uint32_t* data_addr)
   */
 inline void OV_GetPixels(void)
 {	
-	DMA_SetCurrDataCounter(DMA2_Stream1,OV_Output_height*OV_Output_width/2);
+	DMA_SetCurrDataCounter(DMA2_Stream1,def_OV_Height*def_OV_Width/2);
 	DMA_Cmd(DMA2_Stream1,ENABLE);
 	DCMI_CaptureCmd(ENABLE);
 	while(DMA_GetFlagStatus(DMA2_Stream1,DMA_FLAG_TCIF1)!=SET);
@@ -360,7 +360,15 @@ inline void OV_GetPixels(void)
 	DMA_ClearFlag(DMA2_Stream1,DMA_FLAG_TCIF1);
 	DMA_Cmd(DMA2_Stream1,DISABLE);
 }
-
+/**@brief  按照定义大小，重新配置输出窗口
+  *@param  void
+  *@retval void
+  *@add    推荐在重新配置定义后，调用该函数重新配置
+  */
+void OV_Config_Window(void)
+{
+	OV_config_window(def_OV_X,def_OV_Y,def_OV_Width,def_OV_Height);
+}
 
 
 
@@ -386,7 +394,7 @@ static void OV_DCMI_Init(uint32_t* data_addr)
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2,ENABLE);
 	DMA_Cmd(DMA2_Stream1,DISABLE);
 	DMA_InitTypeDef DMA_InitStruct;
-	DMA_InitStruct.DMA_BufferSize = OV_Output_width*OV_Output_height/2;
+	DMA_InitStruct.DMA_BufferSize = def_OV_Width*def_OV_Height/2;
 	DMA_InitStruct.DMA_Channel = DMA_Channel_1;
 	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralToMemory;
 	DMA_InitStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;

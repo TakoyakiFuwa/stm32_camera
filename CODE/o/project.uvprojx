@@ -339,7 +339,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>--diag-suppress=870</MiscControls>
-              <Define>USE_STDPERIPH_DRIVER,STM32F40_41xxx</Define>
+              <Define>USE_STDPERIPH_DRIVER,STM32F429_439xx</Define>
               <Undefine></Undefine>
               <IncludePath>..\st_core;..\st_lib;..\os_src;..\main;..\library;..\o;..\fatfs;..\tft;..\camera;..\ui</IncludePath>
             </VariousControls>
@@ -419,11 +419,6 @@
               <FileName>stm32f4xx.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\st_core\stm32f4xx.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f4xx_conf.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\st_core\stm32f4xx_conf.h</FilePath>
             </File>
             <File>
               <FileName>stm32f4xx_it.c</FileName>
@@ -624,16 +619,6 @@
               <FileName>stm32f4xx_fmpi2c.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\st_lib\stm32f4xx_fmpi2c.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f4xx_fsmc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\st_lib\stm32f4xx_fsmc.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f4xx_fsmc.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\st_lib\stm32f4xx_fsmc.h</FilePath>
             </File>
             <File>
               <FileName>stm32f4xx_gpio.c</FileName>
@@ -1101,11 +1086,6 @@
               <FilePath>..\main\Func.h</FilePath>
             </File>
             <File>
-              <FileName>startup_stm32f40_41xxx.s</FileName>
-              <FileType>2</FileType>
-              <FilePath>..\main\startup_stm32f40_41xxx.s</FilePath>
-            </File>
-            <File>
               <FileName>FreeRTOSConfig.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\main\FreeRTOSConfig.h</FilePath>
@@ -1129,6 +1109,16 @@
               <FileName>cmr_def.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\main\cmr_def.h</FilePath>
+            </File>
+            <File>
+              <FileName>startup_stm32f429_439xx.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\main\startup_stm32f429_439xx.s</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f4xx_conf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\main\stm32f4xx_conf.h</FilePath>
             </File>
           </Files>
         </Group>

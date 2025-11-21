@@ -73,7 +73,7 @@
 #define configUSE_MALLOC_FAILED_HOOK			0 
 
 
-#define configCPU_CLOCK_HZ			( ( unsigned long ) 168000000 )
+#define configCPU_CLOCK_HZ			( ( unsigned long ) 180000000 )
 #define configTICK_RATE_HZ			( ( TickType_t ) 1000 )
 #define configMAX_PRIORITIES		( 32 ) //可使用的最大优先级
 #define configMINIMAL_STACK_SIZE	( ( unsigned short ) 32 )   //是128字，并非字节 即128*4个字节，堆栈大小以字为单位

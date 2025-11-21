@@ -16,13 +16,10 @@ void BMP_Write_ByData(const char* file_name,uint16_t* rgb565,uint16_t width,uint
 void SD_Fast_Write(const char* file_name,uint16_t* data,uint32_t length);
 int8_t SD_Fast_Read(const char* file_name,uint16_t* data,uint32_t length);
 //读写RGB565
-void BMP_WriteRGB565_Data(uint16_t file_name,void* data,uint16_t width,uint16_t height);
-void BMP_ReadRGB565_Data(uint16_t file_name,uint16_t* data,uint16_t width,uint16_t height);
+void BMP_WriteRGB565_Data(uint16_t file_index,uint16_t* data,uint16_t width,uint16_t height);
+void BMP_ReadRGB565_Data(uint16_t file_index,uint16_t* data,uint16_t width,uint16_t height);
 //测试
 void Cmd_BMP(void);
 
-/*  在做camera项目的性能提高  */
-#include "ff.h"
-int8_t BMP_Write_ForeProcess(const char* file_name,FIL* fp,uint16_t width,uint16_t height);
 
 #endif

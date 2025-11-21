@@ -85,6 +85,7 @@ void Main_Start(void* pvParameters)
 	xTaskCreate(Task_UI,"UI",128,NULL,7,NULL);
 //	xTaskCreate(Task_GetADC,"ADC",256,NULL,5,NULL);
 	xTaskCreate(Task_Camera,"Camera",128,NULL,8,NULL);
+//	xTaskCreate(Task_Func,"Func",64,NULL,5,NULL);
 	
 		//退出临界区
 	taskEXIT_CRITICAL();	
@@ -96,8 +97,6 @@ void Main_Start(void* pvParameters)
 /**@brief  命令行创建接口
   *@param  1有匹配 0没匹配转到BaseFunc
   */
-extern qy_pointer CURSOR;
-extern int8_t camera_on ;
 int8_t Cmd(void)
 {
 	//COMMAND
@@ -111,52 +110,6 @@ int8_t Cmd(void)
 	else if(Command("FUNC"))
 	{
 		Cmd_Func();
-	}
-	else if(Command("BMP"))
-	{
-		if(camera_on==0)
-		{
-			camera_on = 1;
-		}
-		else
-		{
-			camera_on = 0;
-			char path[50];
-			BMP_NumToString(pic_index[pic_index_index-1],path);
-			uint16_t a,b;
-			BMP_Read_ByData(path,(uint16_t*)&camera_data[1],&a,&b,DEF_PIC_HEIGHT*DEF_PIC_WIDTH);
-			Func_TFT_Show();
-			U_Printf("[%d,%d] \r\n",a,b);
-		}
-	}
-	else if(Command("a"))
-	{
-		U_Printf("a \r\n");
-		CURSOR.ui->Func_Event_LEFT(CURSOR.ui);
-	}
-	else if(Command("s"))
-	{
-		U_Printf("s \r\n");
-		CURSOR.ui->Func_Event_OK(CURSOR.ui);
-	}
-	else if(Command("d"))
-	{
-		U_Printf("d \r\n");
-		CURSOR.ui->Func_Event_RIGHT(CURSOR.ui);
-	}
-	else if(Command("A"))
-	{
-		U_Printf("A! \r\n");
-		CURSOR.ui->Func_Event_UP(CURSOR.ui);
-	}
-//	else if(Command("S"))
-//	{
-//		U_Printf("S! \r\n");
-//	}
-	else if(Command("D"))
-	{
-		U_Printf("D! \r\n");
-		CURSOR.ui->Func_Event_DOWN(CURSOR.ui);
 	}
 	else if(Command("R"))
 	{
